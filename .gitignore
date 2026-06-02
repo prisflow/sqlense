@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.vsix
+*.log
+.env
+.DS_Store
+__pycache__/
+*.pyc
+.ai_completion/
+docker/student/extensions/node_modules/

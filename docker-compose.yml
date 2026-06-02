@@ -1,0 +1,128 @@
+name: sqlense
+
+x-student-base: &student-base
+  build:
+    context: ./docker/student
+    dockerfile: Dockerfile
+  environment:
+    SUDO_PASSWORD: "sqlense"
+    WS_SERVER: ws://websocket:3001
+    SQLENSE_WS_SERVER: ws://websocket:3001
+    PG_HOST: postgres
+    PG_USER: sqlense
+    PG_PASSWORD: sqlense
+    PG_DATABASE: sqldb
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: sqlense
+      POSTGRES_PASSWORD: sqlense
+      POSTGRES_DB: sqlense
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/api/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./docker/api/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sqlense -d sqlense && psql -U sqlense -d sqlense -c 'SELECT 1 FROM system.users LIMIT 1'"]
+      interval: 3s
+      retries: 20
+
+  api-server:
+    build:
+      context: ./packages/api-server
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      API_PORT: 4000
+      JWT_SECRET: ${JWT_SECRET:-sqlense-dev-secret}
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_USER: sqlense
+      PG_PASSWORD: sqlense
+      PG_DATABASE: sqlense
+      COMPOSE_PROJECT_NAME: sqlense
+      FILE_DIR: /srv/files
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./docker-compose.yml:/app/docker-compose.yml:ro
+      - files:/srv/files
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  websocket:
+    build:
+      context: ./packages/websocket-server
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      API_PORT: 3100
+      AI_GATEWAY_URL: http://ai-gateway:8000
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_USER: sqlense
+      PG_PASSWORD: sqlense
+      PG_DATABASE: sqlense
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  ai-gateway:
+    build:
+      context: .
+      dockerfile: docker/gateway/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      LLM_API_KEY: ${LLM_API_KEY:-sk-placeholder}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.deepseek.com/v1}
+      LLM_MODEL: ${LLM_MODEL:-deepseek-chat}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  auth-proxy:
+    build:
+      context: ./packages/auth-proxy
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - api-server
+
+  teacher-dashboard:
+    build:
+      context: ./packages/teacher-dashboard
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - api-server
+      - websocket
+      - ai-gateway
+
+  student-1:
+    <<: *student-base
+    ports: ["8443:8443"]
+    environment:
+      STUDENT_NO: "2024001"
+      STUDENT_NAME: "张三"
+      PG_DATABASE: "db_student_2024001"
+      PG_USER: "role_student_2024001"
+      PG_PASSWORD: "stu2024001"
+    volumes: ["student1-data:/config"]
+
+volumes:
+  pgdata:
+  student1-data:
+  files:
