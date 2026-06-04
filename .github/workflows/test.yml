@@ -1,0 +1,74 @@
+name: SQLense CI
+
+on:
+  push:
+    branches: [main, feature/*]
+  pull_request:
+    branches: [main]
+
+env:
+  LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: |
+          cd packages/websocket-server && npm ci
+          cd ../api-server && npm ci
+      - name: TypeScript check
+        run: |
+          cd packages/websocket-server && npx tsc --noEmit
+          cd ../api-server && npx tsc --noEmit
+
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Node unit tests
+        run: |
+          cd packages/websocket-server && npm ci && npx vitest run --reporter=verbose
+      - name: Python unit tests
+        run: |
+          pip install pytest && PYTHONPATH=ai-gateway/src python3 -m pytest tests/ -v
+
+  integration:
+    runs-on: ubuntu-latest
+    if: env.LLM_API_KEY != ''
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Python deps
+        run: |
+          pip install httpx asyncpg pydantic-ai-slim openai pymupdf python-dotenv pytest
+      - name: Install Node deps
+        run: |
+          cd packages/websocket-server && npm ci
+      - name: Start Docker services
+        run: |
+          docker compose up -d postgres ai-gateway
+      - name: Wait for services
+        run: |
+          sleep 10
+          timeout 30 bash -c 'until curl -sf http://localhost:8000/health >/dev/null 2>&1; do sleep 2; done'
+      - name: Integration tests
+        run: |
+          PYTHONPATH=ai-gateway/src python3 -m pytest tests/integration/ -v
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL || 'https://api.deepseek.com/v1' }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL || 'deepseek-chat' }}

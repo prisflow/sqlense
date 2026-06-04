@@ -11,7 +11,7 @@ import "./index.css";
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
-      <Toaster position="top-center" richColors closeButton />
+      <Toaster position="top-center" />
       <Routes>
         <Route path="/teacher/*" element={<App />} />
         <Route path="/student/*" element={<StudentDashboard />} />

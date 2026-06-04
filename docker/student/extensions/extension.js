@@ -2,6 +2,7 @@ const vscode = require("vscode");
 const { Tracker } = require("./tracker");
 const { TelemetryClient } = require("./telemetry");
 const { RemoteControl } = require("./remoteControl");
+const { registerDiagnosticProvider } = require("./sqlDiagnostics");
 
 function activate(context) {
   const config = vscode.workspace.getConfiguration("sqlense");
@@ -21,6 +22,8 @@ function activate(context) {
   const telemetry = new TelemetryClient(wsServer, studentId, studentName);
   const tracker = new Tracker(telemetry);
   const remoteControl = new RemoteControl(telemetry);
+
+  registerDiagnosticProvider(context);
 
   context.subscriptions.push(
     vscode.commands.registerCommand("sqlense.connect", () => {

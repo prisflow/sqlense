@@ -1,0 +1,866 @@
+{
+  "layer3": {
+    "analyses": 30,
+    "passed": 30,
+    "errors": 0,
+    "details": [
+      {
+        "student_id": "test_01",
+        "scenario": "correct",
+        "http": 200,
+        "priority": "low",
+        "expected": [
+          "low"
+        ],
+        "pass": true,
+        "diagnosis": "学生已完成 students 表的创建，成功执行了建表语句并验证了表结构。表中包含 id(SERIAL PK)、name(VARCHAR(50) NOT NULL)、age(INTEGER)、email(VARCHAR(100) UNIQUE)、enrolled_at(DATE DEFAULT CURRENT_DATE) 等字段，完全符合任务要求。已执行了插入和查询数据的操作，没有语法错误或报错。",
+        "suggestion": "学生已经成功完成任务，无需额外操作。可以继续进行下一个实验或练习更复杂的 SQL 操作。",
+        "issues": []
+      },
+      {
+        "student_id": "test_02",
+        "scenario": "correct",
+        "http": 200,
+        "priority": "low",
+        "expected": [
+          "low"
+        ],
+        "pass": true,
+        "diagnosis": "学生已经成功创建了 students 表，表结构符合任务要求，包含 id(SERIAL PK), name(VARCHAR(50) NOT NULL), age(INTEGER), email(VARCHAR(100) UNIQUE), enrolled_at(DATE DEFAULT CURRENT_DATE)。学生还执行了 INSERT 和 SELECT 操作进行验证，SQL 无报错。",
+        "suggestion": "学生已完成建表任务，代码正确无误。建议确认表数据是否持久化成功，但总体上任务已完成。",
+        "issues": [
+          {
+            "category": "数据一致性",
+            "severity": "info",
+            "message": "INSERT语句插入的name='测试学生'与当前数据库中实际数据name='张三'不一致，可能为不同session或测试操作，不影响表结构本身的正确性。"
+          }
+        ]
+      },
+      {
+        "student_id": "test_03",
+        "scenario": "correct",
+        "http": 200,
+        "priority": "low",
+        "expected": [
+          "low"
+        ],
+        "pass": true,
+        "diagnosis": "学生已完成 students 表的创建任务。代码分析无错误，SQL 终端成功执行了查询表结构和插入数据的语句，且能正常查询表中数据。表已经存在并可用。",
+        "suggestion": "学生已完成实验任务。建议可以继续探索更多 SQL 操作，如更新、删除数据或学习其他表结构设计。",
+        "issues": []
+      },
+      {
+        "student_id": "test_04",
+        "scenario": "correct",
+        "http": 200,
+        "priority": "low",
+        "expected": [
+          "low"
+        ],
+        "pass": true,
+        "diagnosis": "学生已成功创建了 students 表并完成了数据插入和查询验证。数据库中有 1 个表，没有报错。从执行记录看：先查询了表结构（information_schema.columns），然后插入了测试数据，最后查询了表内容，一切运行正常。任务要求的所有字段（id SERIAL PK, name VARCHAR(50) NOT NULL, age INTEGER, email VARCHAR(100) UNIQUE, enrolled_at DATE DEFAULT CURRENT_DATE）看起来已满足。",
+        "suggestion": "学生已完成建表任务，可以进入下一阶段学习。建议进一步学习修改表结构（ALTER TABLE）、约束管理等进阶内容。",
+        "issues": []
+      },
+      {
+        "student_id": "test_05",
+        "scenario": "correct",
+        "http": 200,
+        "priority": "low",
+        "expected": [
+          "low"
+        ],
+        "pass": true,
+        "diagnosis": "学生已成功创建了 students 表，并执行了建表语句、插入语句和查询语句，均无报错。任务要求创建包含 id(SERIAL PK), name(VARCHAR(50) NOT NULL), age(INTEGER), email(VARCHAR(100) UNIQUE), enrolled_at(DATE DEFAULT CURRENT_DATE) 的表，学生已完成。当前已插入测试数据并查询了表内容，表结构基本符合要求。学生目前空闲时间较长（200秒），可能已完成任务或在等待下一步操作。",
+        "suggestion": "表已创建成功，结构基本符合要求。建议验证表结构的完整性，特别是检查约束（PRIMARY KEY、NOT NULL、UNIQUE、DEFAULT）是否全部正确设置，可以使用 \\d lab.students 命令查看详细信息。如果已完成所有验证，任务可视为完成。",
+        "issues": []
+      },
+      {
+        "student_id": "test_06",
+        "scenario": "correct",
+        "http": 200,
+        "priority": "low",
+        "expected": [
+          "low"
+        ],
+        "pass": true,
+        "diagnosis": "学生已完成建表任务，表结构符合要求。已执行查询表结构、插入数据和查询全部数据的语句，均无报错。虽然遥测显示有200秒空闲且插入的数据已被删除/回滚，但核心建表任务已完成，当前表中仍存在3条初始数据（id=1,2,3），表结构正确。",
+        "suggestion": "任务基本完成，表结构正确。建议确认一下插入的数据是否需要持久化（当前id=4的记录已回滚或删除）。可尝试重新插入1-2条学生记录验证功能完整性。",
+        "issues": [
+          {
+            "category": "数据完整性",
+            "severity": "info",
+            "message": "学生成功插入的数据（id=4）已被删除或回滚，当前表中不存在该记录。可能学生手动删除或未提交事务。"
+          }
+        ]
+      },
+      {
+        "student_id": "test_07",
+        "scenario": "correct",
+        "http": 200,
+        "priority": "low",
+        "expected": [
+          "low"
+        ],
+        "pass": true,
+        "diagnosis": "学生已完成 students 表的创建，代码无错误，SQL 执行成功，表结构正确。从遥测数据看，学生已执行了建表、插入数据和查询操作，且无报错。但空闲时间较长（200秒），可能是在查看结果或准备下一步操作。",
+        "suggestion": "任务已基本完成。建议检查表结构是否包含所有要求的字段和约束（id SERIAL PK, name VARCHAR(50) NOT NULL, age INTEGER, email VARCHAR(100) UNIQUE, enrolled_at DATE DEFAULT CURRENT_DATE），如果确认没问题可以提交。空闲时间较长，可提示学生任务已完成。",
+        "issues": []
+      },
+      {
+        "student_id": "test_08",
+        "scenario": "correct",
+        "http": 200,
+        "priority": "low",
+        "expected": [
+          "low"
+        ],
+        "pass": true,
+        "diagnosis": "学生已完成任务要求。根据任务文档，需要在 lab 模式下创建 students 表，包含 id(SERIAL PK), name(VARCHAR(50) NOT NULL), age(INTEGER), email(VARCHAR(100) UNIQUE), enrolled_at(DATE DEFAULT CURRENT_DATE)。学生已成功创建了 lab.students 表，并执行了 INSERT 和 SELECT 操作均无报错，数据库中有 1 个表。代码分析无错误、无缺失约束，任务基本完成。",
+        "suggestion": "学生已完成建表任务，目前处于空闲状态（200秒无操作）。建议学生可以继续验证表结构（如执行 information_schema 查询确认字段定义），或者进入下一个实验任务。",
+        "issues": []
+      },
+      {
+        "student_id": "test_09",
+        "scenario": "correct",
+        "http": 200,
+        "priority": "low",
+        "expected": [
+          "low"
+        ],
+        "pass": true,
+        "diagnosis": "学生已完成 students 表的创建，表结构正确，包含 id(SERIAL PK), name(VARCHAR(50) NOT NULL), age(INTEGER), email(VARCHAR(100) UNIQUE), enrolled_at(DATE DEFAULT CURRENT_DATE)。已成功执行验证 SQL 查询表结构、插入测试数据以及查询数据，没有报错。任务基本完成，进度很高。",
+        "suggestion": "学生已成功完成建表任务且没有错误，无需额外操作。可以继续下一步学习或练习更多 SQL 操作。",
+        "issues": []
+      },
+      {
+        "student_id": "test_10",
+        "scenario": "correct",
+        "http": 200,
+        "priority": "low",
+        "expected": [
+          "low"
+        ],
+        "pass": true,
+        "diagnosis": "学生已完成建表任务。执行了建表语句、INSERT 语句和查询语句，均无报错。通过查询 information_schema 验证了表结构。任务要求中的 id(SERIAL PK), name(VARCHAR(50) NOT NULL), age(INTEGER), email(VARCHAR(100) UNIQUE), enrolled_at(DATE DEFAULT CURRENT_DATE) 均已满足。当前空闲时间较长（200秒），说明学生可能已经完成实验在休息或观察结果。",
+        "suggestion": "学生已完成实验任务，无需额外操作。可继续后续实验内容。",
+        "issues": []
+      },
+      {
+        "student_id": "test_11",
+        "scenario": "missing_constraints",
+        "http": 200,
+        "priority": "high",
+        "expected": [
+          "high",
+          "medium"
+        ],
+        "pass": true,
+        "diagnosis": "学生当前执行的建表语句为 `CREATE TABLE lab.students (id SERIAL, name VARCHAR(50), age INTEGER, email VARCHAR(100), enrolled_at DATE);`，与任务要求存在明显差距。具体问题如下：\n\n1. **id 字段缺少 PRIMARY KEY 约束**：任务要求 id 为 SERIAL PRIMARY KEY，但学生没有添加主键约束。\n2. **name 字段缺少 NOT NULL 约束**：任务要求 name VARCHAR(50) NOT NULL，但学生未添加非空约束。\n3. **email 字段缺少 UNIQUE 约束**：任务要求 email VARCHAR(100) UNIQUE，但学生未添加唯一性约束。\n4. **enrolled_at 字段缺少 DEFAULT CURRENT_DATE**：任务要求 enrolled_at DATE DEFAULT CURRENT_DATE，但学生未设置默认值。\n\n目前已经执行了建表语句（无语法错误），但表结构与任务要求的完整规格有 4 处约束缺失。学生已尝试 2 次，错误次数 1 次，空闲 120 秒，可能处于卡顿或不知如何继续的状态。",
+        "suggestion": "建议学生按照任务文档中的完整建表语句重新创建表。正确的 SQL 语句应为：\n\n```sql\nCREATE TABLE lab.students (\n    id SERIAL PRIMARY KEY,\n    name VARCHAR(50) NOT NULL,\n    age INTEGER,\n    email VARCHAR(100) UNIQUE,\n    enrolled_at DATE DEFAULT CURRENT_DATE\n);\n```\n\n由于表已存在，需要先执行 `DROP TABLE IF EXISTS lab.students;` 删除旧表，再重新创建。或者使用 ALTER TABLE 逐一添加约束（但重新创建更简便）。",
+        "issues": [
+          {
+            "category": "missing_constraint",
+            "severity": "info",
+            "message": "id 字段缺少 PRIMARY KEY 约束"
+          },
+          {
+            "category": "missing_constraint",
+            "severity": "info",
+            "message": "name 字段缺少 NOT NULL 约束"
+          },
+          {
+            "category": "missing_constraint",
+            "severity": "info",
+            "message": "email 字段缺少 UNIQUE 约束"
+          },
+          {
+            "category": "missing_constraint",
+            "severity": "info",
+            "message": "enrolled_at 字段缺少 DEFAULT CURRENT_DATE"
+          }
+        ]
+      },
+      {
+        "student_id": "test_12",
+        "scenario": "missing_constraints",
+        "http": 200,
+        "priority": "high",
+        "expected": [
+          "high",
+          "medium"
+        ],
+        "pass": true,
+        "diagnosis": "学生已创建了 students 表，但当前 SQL 缺少多个关键约束：缺少 PRIMARY KEY（id 字段未设置主键）、缺少 NOT NULL（name 字段）、缺少 UNIQUE（email 字段）、缺少 DEFAULT（enrolled_at 字段）。任务要求是创建一个包含完整约束的 students 表，目前差距较大。",
+        "suggestion": "请重新执行建表语句，包含所有约束。正确的 SQL 为：\nCREATE TABLE lab.students (\n    id SERIAL PRIMARY KEY,\n    name VARCHAR(50) NOT NULL,\n    age INTEGER,\n    email VARCHAR(100) UNIQUE,\n    enrolled_at DATE DEFAULT CURRENT_DATE\n);\n如果不想重建表，可以使用 ALTER TABLE 逐一添加约束，但推荐直接重新建表。",
+        "issues": [
+          {
+            "category": "约束缺失",
+            "severity": "info",
+            "message": "缺少 PRIMARY KEY 约束：id 字段需要设置为 PRIMARY KEY"
+          },
+          {
+            "category": "约束缺失",
+            "severity": "info",
+            "message": "缺少 NOT NULL 约束：name 字段需要设置为 NOT NULL"
+          },
+          {
+            "category": "约束缺失",
+            "severity": "info",
+            "message": "缺少 UNIQUE 约束：email 字段需要设置为 UNIQUE"
+          },
+          {
+            "category": "约束缺失",
+            "severity": "info",
+            "message": "缺少 DEFAULT 约束：enrolled_at 字段需要设置 DEFAULT CURRENT_DATE"
+          },
+          {
+            "category": "查询错误",
+            "severity": "info",
+            "message": "学生查询 information_schema 显示 is_nullable 为 'YES'，但实际 SERIAL 类型隐式设置 NOT NULL，查询结果与实际情况不符"
+          }
+        ]
+      },
+      {
+        "student_id": "test_13",
+        "scenario": "missing_constraints",
+        "http": 200,
+        "priority": "high",
+        "expected": [
+          "high",
+          "medium"
+        ],
+        "pass": true,
+        "diagnosis": "学生已创建了 students 表，但建表语句与任务要求存在明显差距。任务要求 id 字段为 PRIMARY KEY、name 字段 NOT NULL、email 字段 UNIQUE，而学生执行的建表语句缺少所有这三个关键约束。学生当前只执行了 `CREATE TABLE lab.students (id SERIAL, name VARCHAR(50), age INTEGER, email VARCHAR(100), enrolled_at DATE);`，虽然表已存在且无语法错误，但约束缺失严重。错误次数为1（可能尝试修改但未成功），已空闲120秒（2分钟），处于停滞状态。",
+        "suggestion": "1. 提示学生当前表缺少任务要求的关键约束。2. 建议使用 DROP TABLE 重新建表，或使用 ALTER TABLE 添加约束。3. 给出正确的建表语句供参考：CREATE TABLE lab.students (id SERIAL PRIMARY KEY, name VARCHAR(50) NOT NULL, age INTEGER, email VARCHAR(100) UNIQUE, enrolled_at DATE DEFAULT CURRENT_DATE); 4. 提醒学生注意 NOT NULL 和 UNIQUE 约束的位置（写在类型后面）。",
+        "issues": [
+          {
+            "category": "缺少 PRIMARY KEY 约束",
+            "severity": "error",
+            "message": "id 字段未设置 PRIMARY KEY，任务要求中有此约束"
+          },
+          {
+            "category": "缺少 NOT NULL 约束",
+            "severity": "error",
+            "message": "name 字段未设置 NOT NULL，任务要求中有此约束"
+          },
+          {
+            "category": "缺少 UNIQUE 约束",
+            "severity": "error",
+            "message": "email 字段未设置 UNIQUE，任务要求中有此约束"
+          },
+          {
+            "category": "学生停滞",
+            "severity": "warning",
+            "message": "已空闲120秒未进行操作"
+          }
+        ]
+      },
+      {
+        "student_id": "test_14",
+        "scenario": "missing_constraints",
+        "http": 200,
+        "priority": "high",
+        "expected": [
+          "high",
+          "medium"
+        ],
+        "pass": true,
+        "diagnosis": "学生已成功创建了 students 表，但创建语句存在关键缺陷：执行了 `CREATE TABLE lab.students (id SERIAL, name VARCHAR(50), age INTEGER, email VARCHAR(100), enrolled_at DATE);`，该语句缺少 PRIMARY KEY、NOT NULL、UNIQUE 和 DEFAULT 约束。任务要求中明确规定：id 应为 SERIAL PRIMARY KEY，name 应为 VARCHAR(50) NOT NULL，email 应为 VARCHAR(100) UNIQUE，enrolled_at 应为 DATE DEFAULT CURRENT_DATE。当前表结构仅满足了字段名和数据类型的基本要求，所有约束均缺失。此外，代码分析模块报告\"有错误\"但未给出具体信息，可能与代码面板中的 SQL 不完整有关。学生已尝试 2 次，有 1 次错误记录，且已空闲 120 秒，可能陷入停滞。",
+        "suggestion": "建议学生使用完整语法重新创建表。请执行以下命令删除并重建：先执行 `DROP TABLE lab.students;`，然后执行 `CREATE TABLE lab.students (id SERIAL PRIMARY KEY, name VARCHAR(50) NOT NULL, age INTEGER, email VARCHAR(100) UNIQUE, enrolled_at DATE DEFAULT CURRENT_DATE);`。关键检查点：(1) id 字段后面加上 PRIMARY KEY；(2) name 字段后面加上 NOT NULL；(3) email 字段后面加上 UNIQUE；(4) enrolled_at 字段加上 DEFAULT CURRENT_DATE。",
+        "issues": [
+          {
+            "category": "缺少主键约束",
+            "severity": "info",
+            "message": "id 字段定义为 SERIAL 但缺少 PRIMARY KEY 约束"
+          },
+          {
+            "category": "缺少非空约束",
+            "severity": "info",
+            "message": "name 字段定义为 VARCHAR(50) 但缺少 NOT NULL 约束"
+          },
+          {
+            "category": "缺少唯一约束",
+            "severity": "info",
+            "message": "email 字段定义为 VARCHAR(100) 但缺少 UNIQUE 约束"
+          },
+          {
+            "category": "缺少默认值",
+            "severity": "info",
+            "message": "enrolled_at 字段定义为 DATE 但缺少 DEFAULT CURRENT_DATE 约束"
+          }
+        ]
+      },
+      {
+        "student_id": "test_15",
+        "scenario": "missing_constraints",
+        "http": 200,
+        "priority": "high",
+        "expected": [
+          "high",
+          "medium"
+        ],
+        "pass": true,
+        "diagnosis": "学生当前已创建了表 lab.students，但建表语句缺少多个关键约束。任务要求中明确需要：id 列设置 PRIMARY KEY、name 列设置 NOT NULL、email 列设置 UNIQUE、enrolled_at 列设置 DEFAULT CURRENT_DATE。学生实际执行的 SQL 为：CREATE TABLE lab.students (id SERIAL, name VARCHAR(50), age INTEGER, email VARCHAR(100), enrolled_at DATE); — 未指定任何约束（仅 SERIAL 隐式给了 NOT NULL）。学生已经尝试了2次，有1次错误，并已空闲120秒，可能卡住不知道该怎么做。",
+        "suggestion": "建议学生重新执行正确的建表语句，在列定义中添加所有约束。完整正确的 SQL 为：CREATE TABLE lab.students ( id SERIAL PRIMARY KEY, name VARCHAR(50) NOT NULL, age INTEGER, email VARCHAR(100) UNIQUE, enrolled_at DATE DEFAULT CURRENT_DATE ); 注意：如果表已存在，需要先执行 DROP TABLE lab.students; 再重新创建。",
+        "issues": [
+          {
+            "category": "缺少主键约束",
+            "severity": "info",
+            "message": "id 列未设置 PRIMARY KEY，任务要求必须设置"
+          },
+          {
+            "category": "缺少非空约束",
+            "severity": "info",
+            "message": "name 列未设置 NOT NULL，任务要求必须设置"
+          },
+          {
+            "category": "缺少唯一约束",
+            "severity": "info",
+            "message": "email 列未设置 UNIQUE，任务要求必须设置"
+          },
+          {
+            "category": "缺少默认值",
+            "severity": "info",
+            "message": "enrolled_at 列未设置 DEFAULT CURRENT_DATE，任务要求必须设置"
+          }
+        ]
+      },
+      {
+        "student_id": "test_16",
+        "scenario": "missing_constraints",
+        "http": 200,
+        "priority": "high",
+        "expected": [
+          "high",
+          "medium"
+        ],
+        "pass": true,
+        "diagnosis": "学生已经创建了 students 表，但与任务要求存在以下差距：1）缺少 PRIMARY KEY 约束（id 列为 SERIAL 但未指定 PRIMARY KEY）；2）缺少 NOT NULL 约束（name 列未指定 NOT NULL）；3）缺少 UNIQUE 约束（email 列未指定 UNIQUE）；4）缺少 DEFAULT CURRENT_DATE 约束（enrolled_at 列未指定 DEFAULT）。学生当前的 SQL 语句为 `CREATE TABLE lab.students (id SERIAL, name VARCHAR(50), age INTEGER, email VARCHAR(100), enrolled_at DATE);`，完全缺失了所有约束定义。学生已尝试 2 次但有 1 次错误，且已空闲 120 秒。",
+        "suggestion": "建议学生参考任务文档中的完整建表语句重新创建表，包含所有约束：id SERIAL PRIMARY KEY, name VARCHAR(50) NOT NULL, email VARCHAR(100) UNIQUE, enrolled_at DATE DEFAULT CURRENT_DATE。如果表已存在，可以先执行 DROP TABLE lab.students; 再重新创建。",
+        "issues": [
+          {
+            "category": "缺失约束",
+            "severity": "info",
+            "message": "id 列缺少 PRIMARY KEY 约束"
+          },
+          {
+            "category": "缺失约束",
+            "severity": "info",
+            "message": "name 列缺少 NOT NULL 约束"
+          },
+          {
+            "category": "缺失约束",
+            "severity": "info",
+            "message": "email 列缺少 UNIQUE 约束"
+          },
+          {
+            "category": "缺失约束",
+            "severity": "info",
+            "message": "enrolled_at 列缺少 DEFAULT CURRENT_DATE 约束"
+          }
+        ]
+      },
+      {
+        "student_id": "test_17",
+        "scenario": "missing_constraints",
+        "http": 200,
+        "priority": "medium",
+        "expected": [
+          "high",
+          "medium"
+        ],
+        "pass": true,
+        "diagnosis": "学生已成功创建了 students 表，SQL 语法正确且无报错。但与任务要求对比，存在以下问题：建表语句中缺少 PRIMARY KEY 约束（id 列仅定义为 SERIAL，未指定 PRIMARY KEY）、缺少 name 列的 NOT NULL 约束、缺少 email 列的 UNIQUE 约束、缺少 enrolled_at 列的 DEFAULT CURRENT_DATE 设置。目前仅完成了表的基本结构（字段名和类型基本正确），但关键约束缺失较多。",
+        "suggestion": "建议学生按照任务文档中的完整建表语句重新执行，补充缺少的约束条件：1) 在 id 后添加 PRIMARY KEY；2) 在 name VARCHAR(50) 后添加 NOT NULL；3) 在 email VARCHAR(100) 后添加 UNIQUE；4) 在 enrolled_at DATE 后添加 DEFAULT CURRENT_DATE。可以先 DROP 表再重新 CREATE，或者使用 ALTER TABLE 逐一添加约束。",
+        "issues": [
+          {
+            "category": "missing_constraint",
+            "severity": "info",
+            "message": "id 列未设置 PRIMARY KEY 约束"
+          },
+          {
+            "category": "missing_constraint",
+            "severity": "info",
+            "message": "name 列未设置 NOT NULL 约束"
+          },
+          {
+            "category": "missing_constraint",
+            "severity": "info",
+            "message": "email 列未设置 UNIQUE 约束"
+          },
+          {
+            "category": "missing_constraint",
+            "severity": "info",
+            "message": "enrolled_at 列未设置 DEFAULT CURRENT_DATE"
+          }
+        ]
+      },
+      {
+        "student_id": "test_18",
+        "scenario": "missing_constraints",
+        "http": 200,
+        "priority": "high",
+        "expected": [
+          "high",
+          "medium"
+        ],
+        "pass": true,
+        "diagnosis": "学生已创建了 students 表，但当前建表语句缺少关键约束，与任务要求存在明显差距。具体来说：\n- 任务要求 id 为 SERIAL PRIMARY KEY，但当前创建语句中仅写了 `id SERIAL`，缺少 PRIMARY KEY 约束。\n- 任务要求 name 为 VARCHAR(50) NOT NULL，但当前创建语句中仅写了 `name VARCHAR(50)`，缺少 NOT NULL 约束。\n- 任务要求 email 为 VARCHAR(100) UNIQUE，但当前创建语句中仅写了 `email VARCHAR(100)`，缺少 UNIQUE 约束。\n虽然数据库底层 SERIAL 自动添加了 NOT NULL，但 PRIMARY KEY 和 UNIQUE 约束均未设置。学生执行了查询验证，但查询的列选择（column_name, is_nullable, column_default）也不完整，未包含 data_type 等字段。学生空闲 120 秒，尝试 2 次，有 1 次错误记录，可能卡在如何修改表结构添加约束上。",
+        "suggestion": "建议学生修改建表语句，补全所有约束。推荐使用 ALTER TABLE 添加缺失的约束，或重新创建表（先 DROP 再 CREATE）。正确的完整建表语句为：\n```sql\nCREATE TABLE lab.students (\n    id SERIAL PRIMARY KEY,\n    name VARCHAR(50) NOT NULL,\n    age INTEGER,\n    email VARCHAR(100) UNIQUE,\n    enrolled_at DATE DEFAULT CURRENT_DATE\n);\n```\n如果表已存在，可以执行：\n```sql\nALTER TABLE lab.students ADD PRIMARY KEY (id);\nALTER TABLE lab.students ALTER COLUMN name SET NOT NULL;\nALTER TABLE lab.students ADD CONSTRAINT students_email_unique UNIQUE (email);\n```\n建议学生查看任务文档中的参考示例，补全缺失的约束后重新验证表结构。",
+        "issues": [
+          {
+            "category": "缺少约束",
+            "severity": "info",
+            "message": "id 字段缺少 PRIMARY KEY 约束"
+          },
+          {
+            "category": "缺少约束",
+            "severity": "info",
+            "message": "name 字段缺少 NOT NULL 约束"
+          },
+          {
+            "category": "缺少约束",
+            "severity": "info",
+            "message": "email 字段缺少 UNIQUE 约束"
+          },
+          {
+            "category": "查询不完整",
+            "severity": "info",
+            "message": "验证查询未包含 data_type 字段，与任务要求的查询语句不完全一致"
+          }
+        ]
+      },
+      {
+        "student_id": "test_19",
+        "scenario": "not_started",
+        "http": 200,
+        "priority": "critical",
+        "expected": [
+          "high",
+          "critical"
+        ],
+        "pass": true,
+        "diagnosis": "学生尚未创建任何数据库表，但尝试直接查询 lab.students 表，导致 \"relation does not exist\" 错误。任务要求是在 lab 模式下创建 students 表（包含 id SERIAL PK, name VARCHAR(50) NOT NULL, age INTEGER, email VARCHAR(100) UNIQUE, enrolled_at DATE DEFAULT CURRENT_DATE），但学生根本没有执行 CREATE TABLE 语句，而是直接进行 SELECT 查询。学生已经空闲了300秒（5分钟），尝试了3次均失败，说明卡住了。",
+        "suggestion": "请使用 CREATE TABLE 语句先创建表。具体命令已在任务文档中给出，请参考 task_students_table.md。正确的建表语句为：CREATE TABLE lab.students ( id SERIAL PRIMARY KEY, name VARCHAR(50) NOT NULL, age INTEGER, email VARCHAR(100) UNIQUE, enrolled_at DATE DEFAULT CURRENT_DATE ); 创建完成后，再执行 SELECT 查询验证。",
+        "issues": [
+          {
+            "category": "建表缺失",
+            "severity": "info",
+            "message": "未执行 CREATE TABLE 语句创建 students 表，数据库中没有任何表"
+          },
+          {
+            "category": "执行逻辑错误",
+            "severity": "info",
+            "message": "在表未创建的情况下直接执行 SELECT 查询，导致 'relation does not exist' 错误"
+          },
+          {
+            "category": "进展停滞",
+            "severity": "info",
+            "message": "已空闲300秒，尝试3次均失败，学生卡在不知道需要先建表的步骤"
+          }
+        ]
+      },
+      {
+        "student_id": "test_20",
+        "scenario": "not_started",
+        "http": 200,
+        "priority": "critical",
+        "expected": [
+          "high",
+          "critical"
+        ],
+        "pass": true,
+        "diagnosis": "学生完全未开始建表操作。任务要求创建 `lab.students` 表（包含 id SERIAL PK, name VARCHAR(50) NOT NULL, age INTEGER, email VARCHAR(100) UNIQUE, enrolled_at DATE DEFAULT CURRENT_DATE），但数据库中没有任何表。学生尝试查询 `lab.students` 和学生自行查询 `students` 均报错\"关系不存在\"，说明学生还未执行任何 CREATE TABLE 语句。学生已经空闲约 5 分钟（300秒），尝试了3次查询均失败，目前卡住无法进展。",
+        "suggestion": "建议学生按照任务文档中的步骤操作：首先确保在正确的连接下，执行 `CREATE TABLE lab.students (...)` 建表语句。需要先确认 `lab` schema 是否存在，如不存在可先执行 `CREATE SCHEMA lab;`。建表语句在任务文档中有完整示例，可直接复制使用。创建完成后，再通过查询 information_schema 验证表结构。",
+        "issues": [
+          {
+            "category": "表结构",
+            "severity": "info",
+            "message": "数据库中没有任何表，学生未创建 students 表"
+          },
+          {
+            "category": "语法/执行错误",
+            "severity": "info",
+            "message": "多次查询 lab.students 和 students 均返回 'relation does not exist' 错误"
+          },
+          {
+            "category": "进度停滞",
+            "severity": "info",
+            "message": "学生已空闲300秒，尝试3次均失败，卡在查询阶段未执行建表语句"
+          }
+        ]
+      },
+      {
+        "student_id": "test_21",
+        "scenario": "not_started",
+        "http": 200,
+        "priority": "high",
+        "expected": [
+          "high",
+          "critical"
+        ],
+        "pass": true,
+        "diagnosis": "学生当前任务是在 lab 模式下创建 students 表，但数据库中目前没有任何表。学生执行的 SQL 是 SELECT * FROM lab.students; 尝试查询表，而不是创建表。由于 lab 模式下的 students 表尚不存在，所以报错 \"relation 'lab.students' does not exist\"。学生已经尝试了 3 次但方向错误——他/她一直在查询表而不是创建表，并且已经空闲了 5 分钟（300秒），处于卡住状态。",
+        "suggestion": "请提醒学生：当前任务是需要执行 CREATE TABLE 语句来创建 students 表，而不是查询它。正确的建表语句为：\n```sql\nCREATE TABLE lab.students (\n    id SERIAL PRIMARY KEY,\n    name VARCHAR(50) NOT NULL,\n    age INTEGER,\n    email VARCHAR(100) UNIQUE,\n    enrolled_at DATE DEFAULT CURRENT_DATE\n);\n```\n如果 lab 模式（schema）不存在，可能需要先执行 `CREATE SCHEMA lab;` 再建表。",
+        "issues": [
+          {
+            "category": "方向错误",
+            "severity": "info",
+            "message": "学生一直在执行 SELECT 查询而非 CREATE TABLE 建表语句"
+          },
+          {
+            "category": "表不存在",
+            "severity": "info",
+            "message": "lab.students 表尚未创建，数据库中没有任何表"
+          },
+          {
+            "category": "卡顿",
+            "severity": "info",
+            "message": "学生已空闲 300 秒（5分钟），尝试 3 次均未成功"
+          }
+        ]
+      },
+      {
+        "student_id": "test_22",
+        "scenario": "not_started",
+        "http": 200,
+        "priority": "high",
+        "expected": [
+          "high",
+          "critical"
+        ],
+        "pass": true,
+        "diagnosis": "学生当前处于任务的起始阶段，但存在方向性错误。任务是要求在lab模式下创建students表（CREATE TABLE lab.students），而学生一直在执行SELECT查询语句（SELECT * FROM lab.students），没有执行建表操作。数据库中尚无任何表，且学生已经尝试了3次、空闲了300秒（5分钟），说明卡住了。",
+        "suggestion": "请指导学生执行建表语句：CREATE TABLE lab.students (id SERIAL PRIMARY KEY, name VARCHAR(50) NOT NULL, age INTEGER, email VARCHAR(100) UNIQUE, enrolled_at DATE DEFAULT CURRENT_DATE); 并提醒学生先执行CREATE TABLE建表，再用SELECT查询验证。",
+        "issues": [
+          {
+            "category": "建表操作",
+            "severity": "info",
+            "message": "学生尚未执行建表语句，一直在尝试查询不存在的表。任务要求创建lab.students表，包含id(SERIAL PK), name(VARCHAR(50) NOT NULL), age(INTEGER), email(VARCHAR(100) UNIQUE), enrolled_at(DATE DEFAULT CURRENT_DATE)。"
+          },
+          {
+            "category": "进度停滞",
+            "severity": "info",
+            "message": "学生已空闲300秒（5分钟），尝试3次但每次都执行错误的SELECT语句，未执行建表操作。"
+          }
+        ]
+      },
+      {
+        "student_id": "test_23",
+        "scenario": "not_started",
+        "http": 200,
+        "priority": "high",
+        "expected": [
+          "high",
+          "critical"
+        ],
+        "pass": true,
+        "diagnosis": "学生任务要求创建 students 表（CREATE TABLE），但当前代码分析显示学生写的是 SELECT 查询语句，完全偏离了任务目标。此外，终端显示数据库中有 0 个表，说明 students 表尚未被创建。学生已尝试 3 次，出现 1 次错误，且最后报错为 \"Exceeded maximum output retries (3)\"，说明学生可能遇到了执行超时或输出限制问题后卡住了。学生已空闲 300 秒（5 分钟），处于停滞状态。",
+        "suggestion": "请提醒学生当前任务是使用 CREATE TABLE 创建 students 表，而非写 SELECT 查询。建议学生按照任务文档中的 SQL 语句执行建表操作，并注意使用正确的 schema（lab.students）。可提示学生检查连接信息并执行以下语句：\nCREATE TABLE lab.students (\n    id SERIAL PRIMARY KEY,\n    name VARCHAR(50) NOT NULL,\n    age INTEGER,\n    email VARCHAR(100) UNIQUE,\n    enrolled_at DATE DEFAULT CURRENT_DATE\n);",
+        "issues": [
+          {
+            "category": "任务偏离",
+            "severity": "info",
+            "message": "学生写了一 SELECT 查询语句，但任务要求是使用 CREATE TABLE 创建 students 表"
+          },
+          {
+            "category": "表未创建",
+            "severity": "info",
+            "message": "数据库中有 0 个表，students 表尚未被创建"
+          },
+          {
+            "category": "卡住停滞",
+            "severity": "info",
+            "message": "学生已空闲 5 分钟，最后报错为执行超时，可能不知道下一步如何操作"
+          }
+        ]
+      },
+      {
+        "student_id": "test_24",
+        "scenario": "not_started",
+        "http": 200,
+        "priority": "high",
+        "expected": [
+          "high",
+          "critical"
+        ],
+        "pass": true,
+        "diagnosis": "学生当前任务是在 lab 模式下创建 students 表（包含 id SERIAL PK, name VARCHAR(50) NOT NULL, age INTEGER, email VARCHAR(100) UNIQUE, enrolled_at DATE DEFAULT CURRENT_DATE）。但学生实际上并未执行建表语句，而是反复尝试查询 lab.students 表（SELECT * FROM lab.students），导致多次 \"relation does not exist\" 错误。数据库 lab 模式下尚无任何表，学生似乎不知道需要先 CREATE TABLE 再查询。空闲时间已达 300 秒（5 分钟），说明学生卡住了。",
+        "suggestion": "建议指导学生执行建表语句：CREATE TABLE lab.students (id SERIAL PRIMARY KEY, name VARCHAR(50) NOT NULL, age INTEGER, email VARCHAR(100) UNIQUE, enrolled_at DATE DEFAULT CURRENT_DATE); 建表后再使用 SELECT * FROM lab.students; 验证。可以提示学生：表不存在是因为还没有创建，先用 CREATE TABLE 建表再查询。",
+        "issues": [
+          {
+            "category": "方向错误",
+            "severity": "info",
+            "message": "学生一直在查询不存在的表，没有执行建表语句 CREATE TABLE"
+          },
+          {
+            "category": "进度停滞",
+            "severity": "info",
+            "message": "空闲 300 秒无有效操作，学生可能不知道下一步该做什么"
+          },
+          {
+            "category": "语法/知识",
+            "severity": "info",
+            "message": "学生似乎不了解需要先建表才能查询表数据"
+          }
+        ]
+      },
+      {
+        "student_id": "test_25",
+        "scenario": "not_started",
+        "http": 200,
+        "priority": "critical",
+        "expected": [
+          "high",
+          "critical"
+        ],
+        "pass": true,
+        "diagnosis": "学生尚未开始执行建表任务。任务要求创建 `lab.students` 表（包含 id SERIAL PK, name VARCHAR(50) NOT NULL, age INTEGER, email VARCHAR(100) UNIQUE, enrolled_at DATE DEFAULT CURRENT_DATE），但数据库中目前没有任何表（schema 'lab' 存在但为空）。学生执行的 SQL 是 `SELECT * FROM lab.students;` 和 `SELECT * FROM students;`，试图查询不存在的表，导致报错。学生已空闲 300 秒（5分钟），仅尝试了 3 次查询操作，没有执行建表语句。代码分析显示\"无错误\"是因为分析的代码为空或无关，学生实际上没有任何有效的建表 SQL。",
+        "suggestion": "请先执行建表语句。具体步骤：\n1. 确认你已连接到数据库\n2. 执行以下 SQL 创建 students 表：\n```sql\nCREATE TABLE lab.students (\n    id SERIAL PRIMARY KEY,\n    name VARCHAR(50) NOT NULL,\n    age INTEGER,\n    email VARCHAR(100) UNIQUE,\n    enrolled_at DATE DEFAULT CURRENT_DATE\n);\n```\n3. 创建成功后，可以用 `SELECT * FROM lab.students;` 验证表已存在",
+        "issues": [
+          {
+            "category": "未开始建表",
+            "severity": "info",
+            "message": "学生未执行任何建表语句，反复尝试查询不存在的表而报错"
+          },
+          {
+            "category": "方向错误",
+            "severity": "info",
+            "message": "学生尝试 SELECT * FROM lab.students 和 SELECT * FROM students，但表尚未创建，应先执行 CREATE TABLE"
+          },
+          {
+            "category": "长时间无进展",
+            "severity": "info",
+            "message": "学生已空闲 300 秒（5分钟），卡在查询不存在的表的问题上"
+          }
+        ]
+      },
+      {
+        "student_id": "test_26",
+        "scenario": "off_track",
+        "http": 200,
+        "priority": "high",
+        "expected": [
+          "high",
+          "critical"
+        ],
+        "pass": true,
+        "diagnosis": "学生正在完成建表任务，但存在多个关键问题尚未解决：1）第一次执行使用了 MySQL 的 AUTO_INCREMENT 语法导致报错；2）第二次尝试使用 SERIAL 但缺少 PRIMARY KEY 约束；3）缺少 name 字段（任务要求使用 name VARCHAR(50) NOT NULL，但当前使用了 full_name TEXT NOT NULL）；4）缺少 email 字段的 UNIQUE 约束；5）缺少 enrolled_at 字段；6）数据库中 full_name 列的 NOT NULL 属性未生效（is_nullable=YES）。任务要求创建 id(SERIAL PK), name VARCHAR(50) NOT NULL, age INTEGER, email VARCHAR(100) UNIQUE, enrolled_at DATE DEFAULT CURRENT_DATE，当前表结构与任务要求差距较大。",
+        "suggestion": "建议按照任务文档中的标准建表语句重新创建表：使用 CREATE TABLE lab.students (id SERIAL PRIMARY KEY, name VARCHAR(50) NOT NULL, age INTEGER, email VARCHAR(100) UNIQUE, enrolled_at DATE DEFAULT CURRENT_DATE);。注意：1）先删除当前表（DROP TABLE lab.students;）再重新创建；2）使用 SERIAL PRIMARY KEY 确保 id 既是自增又是主键；3）字段名用 name 而非 full_name；4）添加 email 的 UNIQUE 约束和 enrolled_at 的 DEFAULT CURRENT_DATE。",
+        "issues": [
+          {
+            "category": "语法错误",
+            "severity": "info",
+            "message": "第一次执行使用了 AUTO_INCREMENT（MySQL语法），PostgreSQL 应使用 SERIAL"
+          },
+          {
+            "category": "缺少主键",
+            "severity": "info",
+            "message": "id字段使用了SERIAL但未加PRIMARY KEY，任务要求id为SERIAL PRIMARY KEY"
+          },
+          {
+            "category": "字段名错误",
+            "severity": "info",
+            "message": "使用了full_name而非任务要求的name字段"
+          },
+          {
+            "category": "字段类型错误",
+            "severity": "info",
+            "message": "full_name使用了TEXT，任务要求name为VARCHAR(50)"
+          },
+          {
+            "category": "缺少字段",
+            "severity": "info",
+            "message": "缺少email字段（需VARCHAR(100) UNIQUE）和enrolled_at字段（需DATE DEFAULT CURRENT_DATE）"
+          },
+          {
+            "category": "约束缺失",
+            "severity": "info",
+            "message": "数据库中full_name列的NOT NULL未生效（is_nullable=YES）"
+          }
+        ]
+      },
+      {
+        "student_id": "test_27",
+        "scenario": "off_track",
+        "http": 200,
+        "priority": "high",
+        "expected": [
+          "high",
+          "critical"
+        ],
+        "pass": true,
+        "diagnosis": "学生正在尝试创建 lab.students 表，但存在多个问题：\n\n1. **语法错误已部分修正但表结构仍不完整**：学生先执行了带 AUTO_INCREMENT 的错误语法（报错），然后尝试了 SERIAL 语法（执行成功）。但数据库中 id 列并未真正获得自增属性（pg_get_serial_sequence 返回 None）。\n\n2. **NOT NULL 约束丢失**：full_name 列虽然创建时指定了 NOT NULL，但数据库中该约束未生效（is_nullable 为 YES）。\n\n3. **字段命名错误**：任务要求字段名为 name，但学生创建的是 full_name。\n\n4. **缺少多个字段**：任务要求有 name(VARCHAR(50) NOT NULL)、age(INTEGER)、email(VARCHAR(100) UNIQUE)、enrolled_at(DATE DEFAULT CURRENT_DATE) 共 4 个字段，但当前表结构严重不符合。\n\n5. **缺少主键约束**：任务要求 id 为 PRIMARY KEY，但当前未设置。\n\n6. **缺少 UNIQUE 约束**：任务要求 email 字段有 UNIQUE 约束。\n\n7. **缺少 DEFAULT 约束**：任务要求 enrolled_at 字段有 DEFAULT CURRENT_DATE。\n\n当前进度约 10-15%，学生尝试了 3 次，已空闲 150 秒（2.5 分钟），可能在困惑中。",
+        "suggestion": "建议学生参考任务文档中的标准建表语句，重新创建完整的 students 表。具体建议：\n\n1. 先删除当前表：`DROP TABLE IF EXISTS lab.students;`\n2. 使用正确的建表语句：\n```sql\nCREATE TABLE lab.students (\n    id SERIAL PRIMARY KEY,\n    name VARCHAR(50) NOT NULL,\n    age INTEGER,\n    email VARCHAR(100) UNIQUE,\n    enrolled_at DATE DEFAULT CURRENT_DATE\n);\n```\n3. 注意字段名必须为 name（不是 full_name），且 PostgreSQL 中使用 SERIAL 而非 AUTO_INCREMENT。",
+        "issues": [
+          {
+            "category": "语法错误",
+            "severity": "info",
+            "message": "先执行了 AUTO_INCREMENT 语法报错，后虽用 SERIAL 执行成功，但自增属性未正确生效"
+          },
+          {
+            "category": "字段缺失",
+            "severity": "info",
+            "message": "缺少 name(VARCHAR(50) NOT NULL) 字段（当前使用了错误的 full_name），缺少 email(VARCHAR(100) UNIQUE) 字段，缺少 enrolled_at(DATE DEFAULT CURRENT_DATE) 字段"
+          },
+          {
+            "category": "约束缺失",
+            "severity": "info",
+            "message": "缺少 PRIMARY KEY 约束、NOT NULL 约束未生效、缺少 UNIQUE 约束、缺少 DEFAULT CURRENT_DATE 约束"
+          },
+          {
+            "category": "进展停滞",
+            "severity": "info",
+            "message": "已空闲 150 秒，尝试 3 次仍未成功，可能卡住不知如何继续"
+          }
+        ]
+      },
+      {
+        "student_id": "test_28",
+        "scenario": "off_track",
+        "http": 200,
+        "priority": "high",
+        "expected": [
+          "high",
+          "critical"
+        ],
+        "pass": true,
+        "diagnosis": "学生正在创建 students 表，但存在多个关键问题未解决。任务要求明确：id SERIAL PRIMARY KEY, name VARCHAR(50) NOT NULL, age INTEGER, email VARCHAR(100) UNIQUE, enrolled_at DATE DEFAULT CURRENT_DATE。目前学生的代码存在以下问题：1）列名错误：任务要求 name 列，学生代码中用了 full_name；2）类型错误：full_name 使用了 TEXT，任务要求 VARCHAR(50)；3）缺少 enrolled_at 列（DATE DEFAULT CURRENT_DATE）；4）email 列缺少 UNIQUE 约束；5）id 列缺少 PRIMARY KEY 约束；6）第一个 DDL 使用了 AUTO_INCREMENT（PostgreSQL 不支持，应用 SERIAL）；7）数据库中已创建的表中，NOT NULL 约束未生效（is_nullable=YES）。学生已尝试 3 次，空闲 150 秒，可能卡住了。",
+        "suggestion": "建议学生使用正确的建表语句：CREATE TABLE lab.students (id SERIAL PRIMARY KEY, name VARCHAR(50) NOT NULL, age INTEGER, email VARCHAR(100) UNIQUE, enrolled_at DATE DEFAULT CURRENT_DATE); 注意：1) PostgreSQL 使用 SERIAL 而非 AUTO_INCREMENT；2) 列名应为 name 而非 full_name；3) 类型为 VARCHAR(50) 而非 TEXT；4) 需添加 enrolled_at 列；5) 需在 id 列添加 PRIMARY KEY，email 列添加 UNIQUE 约束。",
+        "issues": [
+          {
+            "category": "语法错误",
+            "severity": "info",
+            "message": "使用了 AUTO_INCREMENT（PostgreSQL 不支持），应使用 SERIAL"
+          },
+          {
+            "category": "列名错误",
+            "severity": "info",
+            "message": "列名使用了 full_name，任务要求为 name"
+          },
+          {
+            "category": "数据类型错误",
+            "severity": "info",
+            "message": "full_name 使用了 TEXT，任务要求 VARCHAR(50)"
+          },
+          {
+            "category": "缺少列",
+            "severity": "info",
+            "message": "缺少 enrolled_at DATE DEFAULT CURRENT_DATE 列"
+          },
+          {
+            "category": "缺少约束",
+            "severity": "info",
+            "message": "id 列缺少 PRIMARY KEY 约束"
+          },
+          {
+            "category": "缺少约束",
+            "severity": "info",
+            "message": "email 列缺少 UNIQUE 约束"
+          },
+          {
+            "category": "约束未生效",
+            "severity": "info",
+            "message": "数据库中已创建的表的 NOT NULL 约束未生效（is_nullable=YES）"
+          }
+        ]
+      },
+      {
+        "student_id": "test_29",
+        "scenario": "off_track",
+        "http": 200,
+        "priority": "high",
+        "expected": [
+          "high",
+          "critical"
+        ],
+        "pass": true,
+        "diagnosis": "学生当前在创建 lab.students 表时存在多个问题。任务要求创建包含 id(SERIAL PK), name(VARCHAR(50) NOT NULL), age(INTEGER), email(VARCHAR(100) UNIQUE), enrolled_at(DATE DEFAULT CURRENT_DATE) 的表。当前数据库中实际存在的表与任务要求有较大差距：1) id 列为普通 integer 而非 SERIAL（缺少序列默认值），且缺失 PRIMARY KEY 约束；2) full_name 列应为 name；3) 缺少 email 的 UNIQUE 约束；4) 缺少 enrolled_at 列（DATE DEFAULT CURRENT_DATE）；5) full_name 的 NOT NULL 约束未生效（数据库显示 is_nullable='YES'）。学生已尝试 3 次，有 2 次语法错误，且已空闲 150 秒，说明可能卡住了。",
+        "suggestion": "建议学生：1) 先 DROP 当前表（DROP TABLE IF EXISTS lab.students;），然后重新创建；2) 严格按照任务文档中的建表语句执行，使用正确的字段名 name（而非 full_name），并添加所有约束：id SERIAL PRIMARY KEY, name VARCHAR(50) NOT NULL, age INTEGER, email VARCHAR(100) UNIQUE, enrolled_at DATE DEFAULT CURRENT_DATE；3) 建表后使用信息模式查询验证表结构是否正确。",
+        "issues": [
+          {
+            "category": "字段名称错误",
+            "severity": "info",
+            "message": "表中使用 full_name 代替了任务要求的 name 字段"
+          },
+          {
+            "category": "缺少字段",
+            "severity": "info",
+            "message": "缺少 enrolled_at DATE DEFAULT CURRENT_DATE 字段"
+          },
+          {
+            "category": "缺少主键约束",
+            "severity": "info",
+            "message": "id 字段未设置 PRIMARY KEY"
+          },
+          {
+            "category": "缺少唯一约束",
+            "severity": "info",
+            "message": "email 字段缺少 UNIQUE 约束"
+          },
+          {
+            "category": "SERIAL 未生效",
+            "severity": "info",
+            "message": "id 列虽使用 SERIAL 语法创建，但实际为普通 integer，无序列默认值"
+          },
+          {
+            "category": "NOT NULL 约束丢失",
+            "severity": "info",
+            "message": "full_name 列的 NOT NULL 约束在数据库中未生效"
+          }
+        ]
+      },
+      {
+        "student_id": "test_30",
+        "scenario": "off_track",
+        "http": 200,
+        "priority": "critical",
+        "expected": [
+          "high",
+          "critical"
+        ],
+        "pass": true,
+        "diagnosis": "学生当前的表与任务要求严重不符。任务要求创建包含 id(SERIAL PK), name(VARCHAR(50) NOT NULL), age(INTEGER), email(VARCHAR(100) UNIQUE), enrolled_at(DATE DEFAULT CURRENT_DATE) 五个字段的 students 表，但实际创建的表只有 id, full_name, age, email 四个字段，且存在多个问题：①缺少 name 字段（使用了 full_name 代替），缺少 email 的 UNIQUE 约束，缺少 enrolled_at 字段及 DEFAULT CURRENT_DATE；②id 字段缺少 PRIMARY KEY 约束，SERIAL 的 NOT NULL 约束也未生效；③full_name 字段本应设为 NOT NULL 但实际未生效。学生已尝试了 3 次、报错 2 次，且已空闲 150 秒没有进展，处于卡住状态。",
+        "suggestion": "建议学生参考任务文档中的标准建表语句，执行正确的 CREATE TABLE 命令：先 DROP 当前错误的表，再重新创建。正确的语句应为：CREATE TABLE lab.students (id SERIAL PRIMARY KEY, name VARCHAR(50) NOT NULL, age INTEGER, email VARCHAR(100) UNIQUE, enrolled_at DATE DEFAULT CURRENT_DATE);",
+        "issues": [
+          {
+            "category": "表结构错误",
+            "severity": "info",
+            "message": "字段名 full_name 应为 name"
+          },
+          {
+            "category": "表结构错误",
+            "severity": "info",
+            "message": "缺少 enrolled_at DATE DEFAULT CURRENT_DATE 字段"
+          },
+          {
+            "category": "表结构错误",
+            "severity": "info",
+            "message": "email 字段缺少 UNIQUE 约束"
+          },
+          {
+            "category": "约束缺失",
+            "severity": "info",
+            "message": "id 字段缺少 PRIMARY KEY 约束"
+          },
+          {
+            "category": "约束缺失",
+            "severity": "info",
+            "message": "full_name/name 字段的 NOT NULL 约束未生效"
+          },
+          {
+            "category": "语法错误",
+            "severity": "info",
+            "message": "首次尝试使用了 PostgreSQL 不支持的 AUTO_INCREMENT 关键字"
+          },
+          {
+            "category": "进展停滞",
+            "severity": "info",
+            "message": "已空闲 150 秒无操作，学生可能卡住不知所措"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -4,6 +4,7 @@ from enum import Enum
 
 
 class PriorityLevel(str, Enum):
+    CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
@@ -41,6 +42,8 @@ class AnalyzeRequest(BaseModel):
     student_id: str
     student_name: str
     telemetry: list[TelemetryEntry]
+    task_description: str = ""
+    student_dsn: str = ""
 
 
 class AnalyzeResponse(BaseModel):
@@ -49,6 +52,10 @@ class AnalyzeResponse(BaseModel):
     priority: PriorityLevel
     progress: ProgressMetrics
     issues: list[IssueCategory] = []
+    diagnosis: str = ""
+    suggestion: str = ""
+    needs_teacher: bool = False
+    suggested_action: str = "none"
 
 
 class ValidateRequest(BaseModel):
@@ -65,3 +72,22 @@ class ValidateResponse(BaseModel):
     score: float
     issues: list[IssueCategory]
     details: list[dict[str, Any]]
+
+
+class BatchTelemetryEntry(BaseModel):
+    student_id: str
+    telemetry: list[TelemetryEntry]
+
+
+class BatchRequest(BaseModel):
+    entries: list[BatchTelemetryEntry]
+
+
+class BatchStudent(BaseModel):
+    student_id: str
+
+
+class BatchResponse(BaseModel):
+    action: str
+    students: list[BatchStudent] = []
+    reasoning: str = ""

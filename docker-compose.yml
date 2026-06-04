@@ -59,6 +59,7 @@ services:
         condition: service_healthy
 
   websocket:
+    restart: unless-stopped
     build:
       context: ./packages/websocket-server
       dockerfile: Dockerfile
@@ -87,6 +88,10 @@ services:
       LLM_API_KEY: ${LLM_API_KEY:-sk-placeholder}
       LLM_BASE_URL: ${LLM_BASE_URL:-https://api.deepseek.com/v1}
       LLM_MODEL: ${LLM_MODEL:-deepseek-chat}
+      PG_DSN: postgresql://sqlense:sqlense@postgres:5432/sqlense
+      FILE_DIR: /srv/files
+    volumes:
+      - files:/srv/files
     depends_on:
       postgres:
         condition: service_healthy
@@ -101,6 +106,7 @@ services:
       - api-server
 
   teacher-dashboard:
+    restart: unless-stopped
     build:
       context: ./packages/teacher-dashboard
       dockerfile: Dockerfile

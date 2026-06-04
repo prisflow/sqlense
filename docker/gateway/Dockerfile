@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 COPY docker/gateway/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt --default-timeout=120
 
 COPY ai-gateway/src/ .
 

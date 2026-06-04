@@ -17,7 +17,6 @@ graph TB
         ODT[onDidChangeTextDocument]
         ODS[onDidChangeTextEditorSelection]
         ODA[onDidChangeActiveTextEditor]
-        CMD[registerCommand]
     end
 
     subgraph 外部
@@ -37,34 +36,36 @@ graph TB
 
 ## 激活方式
 
-`activationEvents` 三种触发：
-
 | 事件 | 说明 |
 |------|------|
 | `onLanguage:sql` | 打开 SQL 文件时 |
 | `onCommand:sqlense.connect` | 执行连接命令时 |
 | `onStartupFinished` | VS Code 启动完成后自动激活 |
 
-## 追踪钩子 (tracker.js)
+## 采集策略
 
-| VS Code API | 触发时机 | 发送事件类型 | 负载内容 |
-|-------------|---------|-------------|---------|
-| `workspace.onDidChangeTextDocument` | SQL 文件内容变更 | `editor` | `{ fileName, changeCount, lineCount }` |
-| `window.onDidChangeActiveTextEditor` | 切换编辑器标签 | `editor` | `{ event: "focus", fileName, languageId }` |
-| `window.onDidChangeTextEditorSelection` | 光标移动 | — | 仅重置空闲计时器，不发事件 |
-| 空闲检测 (定时器) | 30 秒无操作 | `idle` | `{ duration }` |
+扩展只在三种情况下发送数据，每次发都带当前编辑器全文快照：
 
-空闲检测逻辑：
+| 触发条件 | 事件类型 | 负载内容 |
+|---------|---------|---------|
+| 终端报错 (ERROR / syntax error) | `error` | `message`, `code`(当前快照), `codeHistory`(最近5个) |
+| 诊断红色波浪线持续≥5秒且累计≥2次 | `error` | `source: "diagnostics"`, `code`, `codeHistory`, `errors[]` |
+| 空闲超过 3 分钟 | `idle` | `duration` |
 
-```js
-// 每次用户活动时记录时间戳
-// 每 30 秒检查一次，如果 idle > 30s 就发事件
-setInterval(check, 30000)
+### 代码历史记录
+
+- 每 30 秒轮询一次当前 SQL 文件内容
+- 滚动保存最近 5 个快照
+- 只在 error/diagnostics 触发时附带发送
+
+### 空闲检测
+
+```
+用户活动 → 重置计时器
+每 60 秒检查 → 如果距离最后活动 >180 秒 → 发送 idle 事件
 ```
 
 ## 配置
-
-通过 VS Code 设置 `sqlense.*` 配置：
 
 | 配置项 | 环境变量 | 默认值 |
 |--------|---------|--------|
@@ -72,21 +73,9 @@ setInterval(check, 30000)
 | `sqlense.studentId` | `STUDENT_ID` | `unknown` |
 | `sqlense.studentName` | `STUDENT_NAME` | `Unknown` |
 
-设置写入 `/config/data/User/settings.json`：
-
-```json
-{
-  "sqlense.wsServer": "ws://websocket:3001",
-  "sqlense.studentId": "2024001",
-  "sqlense.studentName": "张三"
-}
-```
-
 ## 接管通知
 
 | 教师操作 | WebSocket 事件 | 学生端反应 |
 |---------|--------------|----------|
 | 点击"接管" | `takeover:start` | 弹警告"教师正在查看你的屏幕" |
 | 点击"关闭" | `takeover:stop` | 弹信息"教师已停止查看你的屏幕" |
-
-接管画面本身通过 iframe 嵌入学生 code-server（`http://localhost:<port>`），不走 WebSocket。

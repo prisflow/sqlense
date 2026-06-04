@@ -32,7 +32,9 @@ class PriorityScorer:
         if metrics.current_pct >= 0.8:
             score -= 20
 
-        if score >= 50:
+        if score >= 60:
+            return PriorityLevel.CRITICAL
+        elif score >= 40:
             return PriorityLevel.HIGH
         elif score >= 20:
             return PriorityLevel.MEDIUM

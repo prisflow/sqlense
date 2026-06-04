@@ -10,12 +10,11 @@ class ProgressAnalyzer:
         now = time.time()
         metrics = ProgressMetrics()
 
-        editor_events = [t for t in telemetry if t.type == "editor"]
         terminal_events = [t for t in telemetry if t.type == "terminal"]
-        error_events = [t for t in telemetry if t.type == "error"]
+        error_events = [t for t in telemetry if t.type == "error" and (t.payload or {}).get("code")]
         idle_events = [t for t in telemetry if t.type == "idle"]
 
-        metrics.started = len(editor_events) > 0
+        metrics.started = len(error_events) > 0 or len(terminal_events) > 0
         metrics.attempts = len(terminal_events)
         metrics.errors = len(error_events)
         metrics.idle_seconds = sum(

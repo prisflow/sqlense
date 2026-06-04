@@ -12,42 +12,40 @@
 ## 事件总览
 
 ```mermaid
-graph LR
+graph TB
     subgraph 学生
         TE[student:telemetry]
     end
 
-    subgraph 服务器
-        SO[teacher:student-online]
-        SFO[teacher:student-offline]
-        ST[teacher:telemetry]
-        SU[teacher:status-update]
-        AA[teacher:ai-analysis]
-        TKO[takeover:start]
-        TKC[takeover:stop]
+    subgraph WebSocket Server
+        direction LR
+        TT[TelemetryTracker<br/>双路调度]
+        AS[analyzeStudent<br/>→ AI Gateway]
     end
 
     subgraph 教师
-        TA[teacher:takeover]
-        TR[teacher:takeover-release]
-        AQ[teacher:ai-query]
-        LS[teacher:list-students]
+        OA[teacher:student-online]
+        OF[teacher:student-offline]
+        TEL[teacher:telemetry]
+        ST[teacher:status-update]
+        AA[teacher:ai-analysis]
+        TKO[takeover:start→学生]
+        TKC[takeover:stop→学生]
     end
 
-    TE --> SO & SFO & ST
-    TA --> TKO
-    TR --> TKC
-    AQ --> AA
-
-    TE -.->|转发| ST
-    TE -.->|分析| AA
+    TE -->|idle| TEL
+    TE -->|其他| TT
+    TT -->|高频/全局| AS
+    AS --> AA
+    TT -->|转发| TEL
+    TEL --> OA & OF & ST
 ```
 
 ## 学生 → 服务器
 
-| 事件 | 触发 | 数据 |
-|------|------|------|
-| `student:telemetry` | 编辑器变更 / 空闲 | `{ type, timestamp, payload }` |
+| 事件 | 触发 | 数据类型 |
+|------|------|---------|
+| `student:telemetry` | 终端报错/诊断/空闲 | `{ type: "error"|"terminal"|"idle", timestamp, payload }` |
 
 ## 服务器 → 教师
 
@@ -55,9 +53,9 @@ graph LR
 |------|------|------|
 | `teacher:student-online` | 学生 WebSocket 连接 | `{ studentId, studentName }` |
 | `teacher:student-offline` | 学生断线后 5 秒 | `{ studentId }` |
-| `teacher:telemetry` | 转发学生遥测 | `{ studentId, data: { type, timestamp, payload } }` |
-| `teacher:status-update` | 接管状态变化 | `{ studentId, takeoverActive: boolean }` |
-| `teacher:ai-analysis` | AI 分析完成 | `{ studentId, analysis: { priority, progress, issues } }` |
+| `teacher:telemetry` | 转发学生遥测 | `{ studentId, data }` |
+| `teacher:status-update` | 接管状态变化 | `{ studentId, takeoverActive }` |
+| `teacher:ai-analysis` | AI 分析完成（手动/自动） | `{ studentId, analysis }` |
 | `teacher:error` | 操作失败 | `{ message }` |
 
 ## 教师 → 服务器
@@ -66,17 +64,35 @@ graph LR
 |------|------|
 | `teacher:takeover` | 请求接管学生 `{ studentId }` |
 | `teacher:takeover-release` | 释放接管 `{ studentId }` |
-| `teacher:ai-query` | 请求 AI 分析 `{ studentId }` |
-| `teacher:list-students` | 获取当前在线学生列表 |
+| `teacher:ai-query` | 手动触发 AI 分析 `{ studentId }` |
 
-## 服务器 → 学生
+## TelemetryTracker 调度
 
-| 事件 | 说明 |
-|------|------|
-| `takeover:start` | 教师开始查看 |
-| `takeover:stop` | 教师停止查看 |
+```
+record(studentId, data)
+  ├─ studentFreq[studentId] 滑动窗口(10s)
+  │   └─ ≥5 条 → flushStudent → POST /analyze → teacher:ai-analysis
+  │       └─ 清空该生 buffer
+  ├─ globalCount++
+  │   └─ ≥100 → flushGlobal → POST /batch
+  │       ├─ push → POST /analyze → teacher:ai-analysis
+  │       └─ clear → 丢弃
+  └─ 转发给教师: teacher:telemetry
+```
 
-## 教师接管时序
+idle 事件跳过 tracker，直接广播 `teacher:telemetry`。
+
+## 断线缓冲
+
+学生 WebSocket 断开后，服务器不立即标记离线，等待 5 秒：
+
+```
+学生断线 → 5 秒计时 → 未重连 → 标记 offline
+                      ↓
+                 重连成功 → 取消计时
+```
+
+## 接管时序
 
 ```mermaid
 sequenceDiagram
@@ -98,31 +114,4 @@ sequenceDiagram
     WS->>S: takeover:stop
     S->>S: showInformationMessage
     WS->>T: teacher:status-update(takeoverActive=false)
-```
-
-## 断线缓冲
-
-学生 WebSocket 断开后，服务器不立即标记离线，等待 5 秒：
-
-```
-学生断线 → 5 秒计时 → 未重连 → 标记 offline
-                      ↓
-                 重连成功 → 取消计时
-```
-
-## 离线保护
-
-```mermaid
-sequenceDiagram
-    participant S as 学生
-    participant WS as WebSocket
-    participant T as 教师
-
-    S--xWS: 断开 (brief)
-    WS->>WS: 5s timer start
-    S->>WS: 重连 (within 5s)
-    WS->>WS: cancel timer
-    WS->>T: 不发送 offline 事件
-
-    Note over S,WS: 5 秒内重连，教师端无感知
 ```

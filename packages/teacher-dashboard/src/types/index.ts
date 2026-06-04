@@ -2,6 +2,7 @@ export interface StudentInfo {
   studentId: string;
   studentName: string;
   online: boolean;
+  idle: boolean;
   takeoverActive: boolean;
   csPort?: number;
   class_name?: string;
@@ -17,7 +18,9 @@ export interface TelemetryData {
 export interface AIAnalysis {
   student_id: string;
   student_name: string;
-  priority: "high" | "medium" | "low";
+  priority: "critical" | "high" | "medium" | "low";
+  needs_teacher?: boolean;
+  suggested_action?: string;
   progress: {
     started: boolean;
     attempts: number;

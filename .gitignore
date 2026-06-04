@@ -8,3 +8,9 @@ __pycache__/
 *.pyc
 .ai_completion/
 docker/student/extensions/node_modules/
+students/
+.venv/
+tests/load/__pycache__/
+tests/scenarios/layers/__pycache__/
+tests/scenarios/students/__pycache__/
+tests/load/report.json

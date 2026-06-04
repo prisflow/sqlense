@@ -1,6 +1,8 @@
 import { createServer } from "node:http";
 import { Server } from "socket.io";
 import { pool } from "./db.js";
+import { TelemetryTracker } from "./telemetryTracker.js";
+import type { TelemetryData, FlushEvent } from "./telemetryTracker.js";
 
 const PORT = Number(process.env.PORT) || 3001;
 const AI_GATEWAY_URL = process.env.AI_GATEWAY_URL || "http://ai-gateway:8000";
@@ -10,15 +12,8 @@ interface StudentSession {
   studentId: string;
   studentName: string;
   socketId: string;
-  telemetry: TelemetryData[];
   takeoverActive: boolean;
   takeoverTeacherSocket: string | null;
-}
-
-interface TelemetryData {
-  type: "editor" | "terminal" | "file" | "idle" | "error" | "progress";
-  timestamp: number;
-  payload: unknown;
 }
 
 const httpServer = createServer();
@@ -27,10 +22,128 @@ const io = new Server(httpServer, {
 });
 
 const sessions = new Map<string, StudentSession>();
-const teacherSockets = new Set<string>();
 const offlineTimers = new Map<string, NodeJS.Timeout>();
+const dsnCache = new Map<string, string>();
 
-// HTTP API for file notifications
+async function getStudentDsn(studentId: string): Promise<string> {
+  const cached = dsnCache.get(studentId);
+  if (cached) return cached;
+  try {
+    const result = await pool.query(
+      `SELECT pg_db_name, pg_role_name, cs_password FROM system.students WHERE student_no = $1`,
+      [studentId]
+    );
+    if (result.rows.length > 0) {
+      const s = result.rows[0];
+      const dsn = `postgresql://${s.pg_role_name}:${s.cs_password}@postgres:5432/${s.pg_db_name}`;
+      dsnCache.set(studentId, dsn);
+      return dsn;
+    }
+  } catch { /* best effort */ }
+  return "";
+}
+
+// ── Telemetry Tracker ──
+
+async function analyzeStudent(studentId: string, studentName: string, telemetry: TelemetryData[]) {
+  let task_description = "";
+  let student_dsn = "";
+
+  try {
+    const taskResult = await pool.query(
+      "SELECT description FROM system.tasks ORDER BY created_at DESC LIMIT 1"
+    );
+    if (taskResult.rows.length > 0) {
+      task_description = taskResult.rows[0].description;
+    }
+  } catch { /* best effort */ }
+
+  student_dsn = await getStudentDsn(studentId);
+
+  try {
+    const response = await fetch(`${AI_GATEWAY_URL}/analyze`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        student_id: studentId,
+        student_name: studentName,
+        telemetry: telemetry.slice(-50),
+        task_description,
+        student_dsn,
+      }),
+      signal: AbortSignal.timeout(120_000),
+    });
+    return await response.json();
+  } catch (err) {
+    console.error("AI analyze failed:", err);
+    return null;
+  }
+}
+
+const tracker = new TelemetryTracker(
+  {
+    highFreqWindowMs: 10_000,
+    highFreqThreshold: 5,
+    globalBatchThreshold: 100,
+  },
+  async (event: FlushEvent) => {
+    if (event.type === "student") {
+      const session = sessions.get(event.studentId);
+      const analysis = await analyzeStudent(
+        event.studentId,
+        session?.studentName ?? event.studentId,
+        event.telemetry
+      );
+      if (analysis) {
+        io.to("teachers").emit("teacher:ai-analysis", {
+          studentId: event.studentId,
+          analysis,
+        });
+      }
+    }
+
+    if (event.type === "global") {
+      try {
+        const response = await fetch(`${AI_GATEWAY_URL}/batch`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            entries: event.entries.map((e) => ({
+              student_id: e.studentId,
+              telemetry: e.telemetry,
+            })),
+          }),
+        });
+        const result = await response.json();
+
+        if (result.action === "push" && result.students?.length > 0) {
+          for (const s of result.students) {
+            const entry = event.entries.find((e) => e.studentId === s.student_id);
+            if (entry) {
+              const session = sessions.get(s.student_id);
+              const analysis = await analyzeStudent(
+                s.student_id,
+                session?.studentName ?? s.student_id,
+                entry.telemetry
+              );
+              if (analysis) {
+                io.to("teachers").emit("teacher:ai-analysis", {
+                  studentId: s.student_id,
+                  analysis,
+                });
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error("AI batch failed:", err);
+      }
+    }
+  }
+);
+
+// ── HTTP API for file notifications ──
+
 import express from "express";
 const app = express();
 app.use(express.json());
@@ -39,7 +152,6 @@ app.post("/api/notify-file", async (req, res) => {
   const { taskId, classIds, filename, url } = req.body;
   if (!taskId || !filename) return res.status(400).json({ error: "missing fields" });
 
-  // Find students in these classes
   try {
     const result = await pool.query(
       "SELECT u.username as student_no FROM system.students s JOIN system.users u ON u.id = s.user_id WHERE s.class_id = ANY($1)",
@@ -59,13 +171,13 @@ app.listen(API_PORT, () => {
 });
 
 // ── Socket.IO ──
+
 io.on("connection", (socket) => {
   const role = socket.handshake.query.role as string | undefined;
   const studentId = socket.handshake.query.studentId as string | undefined;
   const studentName = socket.handshake.query.studentName as string | undefined;
 
   if (role === "teacher") {
-    teacherSockets.add(socket.id);
     socket.join("teachers");
 
     const currentOnline = Array.from(sessions.entries()).map(([id, s]) => ({
@@ -107,27 +219,19 @@ io.on("connection", (socket) => {
 
     socket.on("teacher:ai-query", async ({ studentId }: { studentId: string }) => {
       const session = sessions.get(studentId);
-      if (!session) return socket.emit("teacher:error", { message: "学生不在线" });
-      try {
-        const response = await fetch(`${AI_GATEWAY_URL}/analyze`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            student_id: studentId,
-            student_name: session.studentName,
-            telemetry: session.telemetry.slice(-50),
-          }),
-        });
-        const analysis = await response.json();
-        socket.emit("teacher:ai-analysis", { studentId, analysis });
-      } catch (err) {
-        console.error("AI query failed:", err);
-        socket.emit("teacher:error", { message: "AI 分析服务不可用" });
+      if (!session) return socket.emit("teacher:error", { studentId, message: "学生不在线" });
+
+      const telemetry = tracker.getStudentBuffer(studentId);
+      const analysis = await analyzeStudent(studentId, session.studentName, telemetry);
+      tracker.clearStudent(studentId);
+      if (analysis) {
+        io.to("teachers").emit("teacher:ai-analysis", { studentId, analysis });
+      } else {
+        socket.emit("teacher:error", { studentId, message: "AI 分析服务不可用" });
       }
     });
 
     socket.on("disconnect", () => {
-      teacherSockets.delete(socket.id);
       for (const [, session] of sessions) {
         if (session.takeoverTeacherSocket === socket.id) {
           session.takeoverActive = false;
@@ -145,7 +249,6 @@ io.on("connection", (socket) => {
       studentId,
       studentName: studentName || studentId,
       socketId: socket.id,
-      telemetry: [],
       takeoverActive: false,
       takeoverTeacherSocket: null,
     };
@@ -158,12 +261,13 @@ io.on("connection", (socket) => {
     });
 
     socket.on("student:telemetry", (data: TelemetryData) => {
-      session.telemetry.push(data);
-      if (session.telemetry.length > 200) session.telemetry.splice(0, 50);
-      io.to("teachers").emit("teacher:telemetry", {
-        studentId,
-        data,
-      });
+      if (data.type === "idle") {
+        io.to("teachers").emit("teacher:telemetry", { studentId, data });
+        return;
+      }
+
+      io.to("teachers").emit("teacher:telemetry", { studentId, data });
+      tracker.record(studentId, data);
     });
 
     socket.on("disconnect", () => {

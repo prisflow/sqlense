@@ -6,7 +6,10 @@ class Tracker {
     this.idleTimer = null;
     this.lastActivity = Date.now();
     this.disposables = [];
-
+    this.diagTimer = null;
+    this.diagCount = 0;
+    this.codeHistory = [];
+    this.lastCodeSnapshot = "";
     this._init();
   }
 
@@ -15,37 +18,18 @@ class Tracker {
       vscode.workspace.onDidChangeTextDocument((e) => {
         if (e.document.languageId !== "sql") return;
         this._onActivity();
-        this.telemetry.send({
-          type: "editor",
-          timestamp: Date.now(),
-          payload: {
-            fileName: e.document.fileName,
-            changeCount: e.contentChanges.length,
-            lineCount: e.document.lineCount,
-          },
-        });
       })
     );
 
     this.disposables.push(
-      vscode.window.onDidChangeTextEditorSelection((e) => {
+      vscode.window.onDidChangeTextEditorSelection(() => {
         this._onActivity();
       })
     );
 
     this.disposables.push(
-      vscode.window.onDidChangeActiveTextEditor((e) => {
-        if (!e) return;
+      vscode.window.onDidChangeActiveTextEditor(() => {
         this._onActivity();
-        this.telemetry.send({
-          type: "editor",
-          timestamp: Date.now(),
-          payload: {
-            event: "focus",
-            fileName: e.document.fileName,
-            languageId: e.document.languageId,
-          },
-        });
       })
     );
 
@@ -56,6 +40,91 @@ class Tracker {
     );
 
     this._startIdleMonitor();
+    this._startCodeHistoryMonitor();
+    this._startSqlToolsMonitor();
+    this._startDiagnosticsMonitor();
+  }
+
+  _getEditorSql() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || editor.document.languageId !== "sql") return "";
+    return editor.document.getText();
+  }
+
+  _startCodeHistoryMonitor() {
+    setInterval(() => {
+      const text = this._getEditorSql();
+      if (!text || text === this.lastCodeSnapshot) return;
+      this.lastCodeSnapshot = text;
+      this.codeHistory.push({ text, timestamp: Date.now() });
+      if (this.codeHistory.length > 5) this.codeHistory.shift();
+    }, 30000);
+  }
+
+  async _startSqlToolsMonitor() {
+    try {
+      const ext = vscode.extensions.getExtension("mtxr.sqltools");
+      if (!ext) return;
+      if (!ext.isActive) await ext.activate();
+      const api = ext.exports;
+      if (!api || !api.addBeforeCommandHook) return;
+
+      const COMMANDS = ["executeQuery", "executeCurrentQuery", "executeQueryFromFile", "executeFromInput"];
+
+      for (const cmd of COMMANDS) {
+        api.addBeforeCommandHook(cmd, (evt) => {
+          this._onActivity();
+          let sql = "";
+          if (cmd === "executeQuery" && typeof evt.args[0] === "string") {
+            sql = evt.args[0];
+          } else {
+            sql = this._getEditorSql();
+          }
+          if (!sql) return;
+          this.telemetry.send({
+            type: "terminal",
+            timestamp: Date.now(),
+            payload: { output: sql },
+          });
+        });
+      }
+    } catch (e) {
+      console.error("SQLense: failed to hook SQLTools", e);
+    }
+  }
+
+  _startDiagnosticsMonitor() {
+    vscode.languages.onDidChangeDiagnostics((e) => {
+      for (const uri of e.uris) {
+        if (!uri.path.endsWith(".sql")) continue;
+        const diagnostics = vscode.languages.getDiagnostics(uri);
+        const errors = diagnostics.filter((d) => d.severity === vscode.DiagnosticSeverity.Error);
+        if (errors.length === 0) { this.diagCount = 0; return; }
+
+        this.diagCount++;
+        if (this.diagTimer) return;
+
+        this.diagTimer = setTimeout(() => {
+          this.diagTimer = null;
+          if (this.diagCount < 2) { this.diagCount = 0; return; }
+
+          this.telemetry.send({
+            type: "error",
+            timestamp: Date.now(),
+            payload: {
+              source: "diagnostics",
+              code: this._getEditorSql(),
+              codeHistory: this.codeHistory,
+              errors: errors.map((d) => ({
+                line: d.range.start.line + 1,
+                message: d.message,
+              })),
+            },
+          });
+          this.diagCount = 0;
+        }, 5000);
+      }
+    });
   }
 
   _onActivity() {
@@ -69,18 +138,19 @@ class Tracker {
   _startIdleMonitor() {
     setInterval(() => {
       const idleTime = (Date.now() - this.lastActivity) / 1000;
-      if (idleTime > 30) {
+      if (idleTime > 180) {
         this.telemetry.send({
           type: "idle",
           timestamp: Date.now(),
           payload: { duration: idleTime },
         });
       }
-    }, 30000);
+    }, 60000);
   }
 
   dispose() {
     for (const d of this.disposables) d.dispose();
+    if (this.diagTimer) clearTimeout(this.diagTimer);
   }
 }
 

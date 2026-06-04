@@ -1,0 +1,93 @@
+{
+  "analyses": 4,
+  "errors": 0,
+  "details": [
+    {
+      "student_id": "test_19",
+      "priority": "high",
+      "diagnosis": "学生当前任务是在 lab 模式下创建 students 表（包含 id SERIAL PK, name VARCHAR(50) NOT NULL, age INTEGER, email VARCHAR(100) UNIQUE, enrolled_at DATE DEFAULT CURRENT_DATE）。但目前学生尚未执行任何 CREATE TABLE 语句，数据库中 lab 模式下没有创建任何表。学生尝试了 SELECT 查询（SELECT * FROM lab.students 和 SELECT * FROM students），但因为表不存在导致报错。学生当前还停留在查询阶段，没有开始建表操作。",
+      "suggestion": "请先执行 CREATE TABLE lab.students (...) 语句创建学生信息表，然后再验证表结构。建表语句参考：CREATE TABLE lab.students (id SERIAL PRIMARY KEY, name VARCHAR(50) NOT NULL, age INTEGER, email VARCHAR(100) UNIQUE, enrolled_at DATE DEFAULT CURRENT_DATE);",
+      "issues": [
+        {
+          "category": "未建表",
+          "severity": "info",
+          "message": "lab 模式下没有创建 students 表，学生当前只执行了 SELECT 查询，尚未执行 CREATE TABLE 语句"
+        },
+        {
+          "category": "方向偏离",
+          "severity": "info",
+          "message": "学生在尝试查询一个不存在的表，而不是先创建表"
+        }
+      ]
+    },
+    {
+      "student_id": "test_20",
+      "priority": "critical",
+      "diagnosis": "学生尚未创建任何表。任务要求是在 lab 模式下创建 students 表，但数据库中没有任何表存在。学生尝试用 SELECT * FROM lab.students 查询，但表未创建导致报错。学生似乎只做了查询操作，没有执行 CREATE TABLE 语句来建表。",
+      "suggestion": "请提示学生：当前数据库中没有创建任何表。任务要求是【创建表】，而不是查询表。学生需要先执行 CREATE TABLE lab.students (...) 语句来建表。可以参考任务文档中的示例 CREATE TABLE 语句，在 SQL 终端中执行建表操作，然后再验证表结构。",
+      "issues": [
+        {
+          "category": "表结构",
+          "severity": "info",
+          "message": "数据库中没有创建任何表，任务要求创建 students 表但未执行 CREATE TABLE 语句"
+        },
+        {
+          "category": "语法/操作",
+          "severity": "info",
+          "message": "学生反复执行 SELECT 查询不存在的表，而非执行建表语句"
+        },
+        {
+          "category": "进度",
+          "severity": "info",
+          "message": "进度为 0%，尚未开始建表操作"
+        }
+      ]
+    },
+    {
+      "student_id": "test_21",
+      "priority": "high",
+      "diagnosis": "学生当前处于任务的初始阶段，任务要求在 lab 模式（lab schema）下创建 students 表，但学生尚未执行任何 CREATE TABLE 语句。数据库中没有任何表，lab schema 为空。学生尝试查询 lab.students 和 students 表，均因表不存在而报错。目前学生只是一直在执行 SELECT 查询，没有理解正确的操作流程是先用 CREATE TABLE 建表。",
+      "suggestion": "建议学生按照任务文档中的步骤操作：先使用正确的 CREATE TABLE 语句在 lab schema 下创建 students 表，包含 id(SERIAL PK), name(VARCHAR(50) NOT NULL), age(INTEGER), email(VARCHAR(100) UNIQUE), enrolled_at(DATE DEFAULT CURRENT_DATE) 这五个字段及对应约束。执行 CREATE TABLE lab.students (...); 后再用 SELECT 查询验证。",
+      "issues": [
+        {
+          "category": "表结构未创建",
+          "severity": "info",
+          "message": "数据库中没有任何表，lab schema 为空，而任务要求创建 students 表"
+        },
+        {
+          "category": "操作方向错误",
+          "severity": "info",
+          "message": "学生反复执行 SELECT 查询不存在的表，而未执行 CREATE TABLE 建表语句"
+        },
+        {
+          "category": "语法错误",
+          "severity": "info",
+          "message": "当前代码分析显示无语法错误，但学生未执行建表 SQL"
+        }
+      ]
+    },
+    {
+      "student_id": "test_22",
+      "priority": "high",
+      "diagnosis": "学生尚未开始执行建表操作。当前数据库中无任何表，说明学生还未执行 CREATE TABLE 语句。学生一直在尝试 SELECT 查询（尝试了 lab.students 和 students 表），但表根本不存在，导致反复报 \"relation does not exist\" 错误。学生可能停留在尝试查看已有数据的阶段，没有理解需要先创建表。",
+      "suggestion": "建议学生按照任务文档中的操作步骤，先执行 CREATE TABLE 语句创建 students 表（注意在 lab 模式下，或使用 lab.students 完整名称）。具体建表语句已在任务文档中给出，可直接复制使用。创建成功后，再尝试 SELECT 查询验证。",
+      "issues": [
+        {
+          "category": "未创建表",
+          "severity": "info",
+          "message": "数据库中没有任何表，学生始终在执行 SELECT 查询但表不存在"
+        },
+        {
+          "category": "任务理解偏差",
+          "severity": "info",
+          "message": "学生在反复尝试查询不存在的表，而没有执行创建表的操作"
+        },
+        {
+          "category": "概念混淆",
+          "severity": "info",
+          "message": "学生可能不清楚需要先创建表（CREATE TABLE）才能查询数据（SELECT）"
+        }
+      ]
+    }
+  ]
+}

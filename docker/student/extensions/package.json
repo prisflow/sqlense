@@ -9,9 +9,12 @@
     "vscode": "^1.85.0"
   },
   "dependencies": {
+    "pgsql-ast-parser": "^12.0.2",
     "socket.io-client": "^4.8.1"
   },
-  "categories": ["Other"],
+  "categories": [
+    "Other"
+  ],
   "activationEvents": [
     "onLanguage:sql",
     "onCommand:sqlense.connect",

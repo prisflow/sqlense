@@ -42,12 +42,9 @@ export function AIPriorityPanel() {
                     <span className="text-sm text-gray-900">{s.studentName}</span>
                     <Badge variant={priorityBadge[analysis.priority]}>{priorityLabel[analysis.priority]}</Badge>
                   </div>
-                  {analysis.progress && (
-                    <div className="text-xs space-y-1 text-gray-600">
-                      <p>尝试: {analysis.progress.attempts} 次</p>
-                      <p>错误: {analysis.progress.errors} 次</p>
-                      <p>空闲: {Math.round(analysis.progress.idle_seconds / 60)} 分钟</p>
-                      <p className="text-gray-500">{analysis.progress.message}</p>
+                  {analysis.diagnosis && (
+                    <div className="text-xs text-gray-600 leading-relaxed max-h-24 overflow-y-auto scrollbar-thin">
+                      {analysis.diagnosis}
                     </div>
                   )}
                   {analysis.issues.length > 0 && (
