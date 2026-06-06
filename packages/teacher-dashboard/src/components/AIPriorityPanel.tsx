@@ -47,13 +47,6 @@ export function AIPriorityPanel() {
                       {analysis.diagnosis}
                     </div>
                   )}
-                  {analysis.issues.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                      {analysis.issues.map((issue, i) => (
-                        <p key={i} className="text-xs text-gray-600">{issue.message}</p>
-                      ))}
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             );
