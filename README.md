@@ -4,12 +4,6 @@
 
 **智能编程实验室教学平台 —— 学生独立环境 + 实时监控 + AI 自动诊断**
 
-[![CI](https://img.shields.io/github/actions/workflow/status/prisflow/sqlense/.github/workflows/test.yml?branch=main&style=flat-square)](https://github.com/prisflow/sqlense/actions)
-[![License](https://img.shields.io/github/license/prisflow/sqlense?style=flat-square)](LICENSE)
-[![Docker](https://img.shields.io/badge/docker-compose-2496ed?style=flat-square&logo=docker)](docker-compose.yml)
-
-[在线体验](https://demo.sqlense.io) · [技术文档](doc/intro.md) · [功能路线](#-) · [定制其他语言](#-multi-language-lab)
-
 </div>
 
 <div align="center">
@@ -31,6 +25,12 @@
 ![Zustand](https://img.shields.io/badge/zustand-000000?style=for-the-badge&logo=react&logoColor=white)
 ![Zod](https://img.shields.io/badge/zod-3E67B1?style=for-the-badge&logo=zod&logoColor=white)
 ![DeepSeek](https://img.shields.io/badge/deepseek-4F6BED?style=for-the-badge&logo=deepseek&logoColor=white)
+
+</div>
+
+<div align="center" style="margin-top: 8px;">
+
+[在线体验](https://demo.sqlense.io) · [技术文档](doc/intro.md) · [定制其他语言](#-multi-language-lab)
 
 </div>
 
