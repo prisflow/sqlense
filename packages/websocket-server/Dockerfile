@@ -1,3 +1,5 @@
+# ── Build Stage ──
+# 编译 TypeScript → JavaScript
 FROM node:22-alpine AS builder
 
 WORKDIR /app
@@ -7,6 +9,7 @@ COPY tsconfig.json .
 COPY src/ ./src/
 RUN npx tsc
 
+# ── Production Stage ──
 FROM node:22-alpine
 
 WORKDIR /app

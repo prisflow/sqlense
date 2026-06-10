@@ -24,7 +24,7 @@ docker compose up -d --no-deps <service>
 bash scripts/build-extension.sh
 ```
 
-输出到 `docker/student/extensions/sqlense-vscode/`，包含 `node_modules`。
+输出到 `packages/vs-code-extension/node_modules/`。
 
 ## 批量置备学生
 

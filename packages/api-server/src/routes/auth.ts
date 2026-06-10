@@ -3,7 +3,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { pool } from "../models/db.js";
-import { signToken, authenticate } from "../middleware/auth.js";
+import { signToken, authenticate, type JwtPayload } from "../middleware/auth.js";
+import { audit } from "./common.js";
 
 export const authRouter = Router();
 
@@ -15,11 +16,15 @@ const loginSchema = z.object({
 const COOKIE_OPTS = {
   httpOnly: true,
   secure: false,
+  // 允许导航跳进来
   sameSite: "lax" as const,
+  // 所有路由都要读
   path: "/",
+  // 跟JWT对齐24小时
   maxAge: 86400000,
 };
 
+// 处理用户登录认证，签发 JWT Cookie
 authRouter.post("/login", async (req, res) => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "参数错误" });
@@ -52,6 +57,7 @@ authRouter.post("/login", async (req, res) => {
 
   res.cookie("token", token, COOKIE_OPTS);
 
+  // 不用 common.audit：此时尚无 JWT、req.user 为 undefined，审计数据来自 DB 查询结果
   pool.query(
     "INSERT INTO system.audit_logs (user_id, username, role, action, detail) VALUES ($1, $2, $3, 'login', '{}')",
     [user.id, user.username, user.role]
@@ -62,21 +68,19 @@ authRouter.post("/login", async (req, res) => {
   });
 });
 
+// 处理用户登出，清除 Cookie
 authRouter.post("/logout", (req, res) => {
-  if (req.user) {
-    pool.query(
-      "INSERT INTO system.audit_logs (user_id, username, role, action, detail) VALUES ($1, $2, $3, 'logout', '{}')",
-      [req.user.userId, req.user.username, req.user.role]
-    ).catch((err) => console.error("Logout audit failed:", err));
-  }
+  if (req.user) audit(req.user as JwtPayload, "logout");
   res.clearCookie("token", { path: "/" });
   res.json({ message: "已退出" });
 });
 
+// 获取当前登录用户信息
 authRouter.get("/me", authenticate, (req, res) => {
   res.json({ user: req.user });
 });
 
+// 验证 Token 有效性（auth-proxy 用）
 authRouter.all("/verify", (req, res) => {
   if (req.cookies?.token) {
     try {

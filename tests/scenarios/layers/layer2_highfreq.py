@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
-"""
-Layer 2: 单生高频测试
-选一个差生 (student_26) 在 10 秒内发 8 条报错，
-验证 flushStudent 触发 /analyze 并推送到教师端。
-"""
 import json, sys, os, time, asyncio
 from socketio import Client
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 WS_URL = "http://localhost:3001"
 
+# 加载差生数据，高频发送8条触发分析
 async def run():
     with open(os.path.join(ROOT, "students", "student_26.json")) as f:
         student = json.load(f)
@@ -22,6 +18,7 @@ async def run():
     errors = []
 
     @teacher.on("teacher:ai-analysis")
+    # 接收学生AI分析结果
     def on_analysis(data):
         analyses.append(data)
         a = data.get("analysis", {})
@@ -34,6 +31,7 @@ async def run():
             print(f"         建议: {sug}...")
 
     @teacher.on("teacher:error")
+    # 接收教师端错误事件
     def on_error(data):
         errors.append(data)
         print(f"  [错误] {data}")
@@ -60,6 +58,7 @@ async def run():
     print(f"\n[layer2] 收到分析: {len(analyses)}, 错误: {len(errors)}")
     return analyses, errors
 
+# 主入口：执行单生高频测试并输出
 if __name__ == "__main__":
     results = asyncio.run(run())
     details = []

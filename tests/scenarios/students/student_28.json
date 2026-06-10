@@ -1,0 +1,72 @@
+{
+  "student_no": "test_28",
+  "scenario": "off_track",
+  "dsn": "postgresql://test_role_28:stu28pass@postgres:5432/test_db_28",
+  "telemetry": [
+    {
+      "type": "error",
+      "timestamp": 1700000000,
+      "payload": {
+        "code": "CREATE TABLE lab.students (id INT AUTO_INCREMENT, full_name TEXT NOT NULL, age INT, email TEXT);",
+        "codeHistory": [
+          {
+            "text": "CREATE TABLE students (id INT AUTO_INCREMENT, name TEXT);",
+            "timestamp": 1699999940
+          },
+          {
+            "text": "CREATE TABLE lab.students (id INT AUTO_INCREMENT, full_name TEXT NOT NULL, age INT, email TEXT);",
+            "timestamp": 1699999970
+          }
+        ],
+        "source": "diagnostics",
+        "errors": [
+          {
+            "line": 1,
+            "message": "syntax error at or near 'AUTO_INCREMENT'"
+          }
+        ]
+      }
+    },
+    {
+      "type": "terminal",
+      "timestamp": 1700000000,
+      "payload": {
+        "output": "CREATE TABLE lab.students (id INT AUTO_INCREMENT, full_name TEXT NOT NULL, age INT, email TEXT);\nERROR: syntax error at or near 'AUTO_INCREMENT'\nLINE 1: ...CREATE TABLE lab.students (id INT AUTO_INCREMENT...\n                                              ^\nHINT: Use SERIAL instead of AUTO_INCREMENT in PostgreSQL\n"
+      }
+    },
+    {
+      "type": "error",
+      "timestamp": 1700000000,
+      "payload": {
+        "code": "CREATE TABLE lab.students (id SERIAL, full_name TEXT NOT NULL, age INT, email TEXT);",
+        "codeHistory": [
+          {
+            "text": "CREATE TABLE lab.students (id SERIAL, full_name TEXT NOT NULL, age INT, email TEXT);",
+            "timestamp": 1699999970
+          }
+        ]
+      }
+    },
+    {
+      "type": "terminal",
+      "timestamp": 1700000000,
+      "payload": {
+        "output": "CREATE TABLE lab.students (id SERIAL, full_name TEXT NOT NULL, age INT, email TEXT);\nCREATE TABLE"
+      }
+    },
+    {
+      "type": "terminal",
+      "timestamp": 1700000000,
+      "payload": {
+        "output": "SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_schema='lab' AND table_name='students' ORDER BY ordinal_position;\n column_name | data_type | is_nullable\n-------------+-----------+-------------\n id          | integer   | YES\n full_name   | text      | NOT NULL\n age         | integer   | YES\n email       | text      | YES\n(4 rows)"
+      }
+    },
+    {
+      "type": "idle",
+      "timestamp": 1700000000,
+      "payload": {
+        "duration": 150
+      }
+    }
+  ]
+}

@@ -6,6 +6,7 @@ import { authenticate, requireRole } from "../middleware/auth.js";
 export const studentsRouter = Router();
 studentsRouter.use(authenticate);
 
+// 按用户 ID 查询学生信息
 studentsRouter.get("/by-user/:userId", async (req, res) => {
   const result = await pool.query(`
     SELECT s.*, u.display_name, u.username as student_no
@@ -17,8 +18,10 @@ studentsRouter.get("/by-user/:userId", async (req, res) => {
   res.json({ student: result.rows[0] });
 });
 
+// 后面的路由受当前这个以及初始中间件影响
 studentsRouter.use(requireRole('teacher', 'admin'));
 
+// 获取全部学生列表
 studentsRouter.get("/", async (_req, res) => {
   const result = await pool.query(`
     SELECT s.id, u.display_name, u.username as student_no,
@@ -31,6 +34,7 @@ studentsRouter.get("/", async (_req, res) => {
   res.json({ students: result.rows });
 });
 
+// 查看单个学生详情
 studentsRouter.get("/:id", async (req, res) => {
   const result = await pool.query(`
     SELECT s.*, u.display_name, u.username as student_no, c.name as class_name
@@ -43,8 +47,10 @@ studentsRouter.get("/:id", async (req, res) => {
   res.json({ student: result.rows[0] });
 });
 
+// 更新学生状态
 studentsRouter.put("/:id/status", async (req, res) => {
   const schema = z.object({ status: z.enum(["active", "inactive", "disabled"]) });
+  // 不抛异常的校验方法
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "参数错误" });
   await pool.query("UPDATE system.students SET status = $1 WHERE id = $2", [parsed.data.status, req.params.id]);

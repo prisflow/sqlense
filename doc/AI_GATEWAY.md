@@ -120,7 +120,6 @@ class AgentDiagnosis(BaseModel):
     diagnosis: str           # 问题描述
     suggestion: str          # 修改建议
     progress_pct: int        # 0-100
-    needs_teacher: bool      # 是否需要教师介入
     suggested_action: str    # "none" | "notify" | "popup"
     issues: list[Issue]
 ```
@@ -135,18 +134,13 @@ class AgentDiagnosis(BaseModel):
 {
   "student_id": "2024001",
   "priority": "critical",
-  "progress": {"errors": 5, "attempts": 3, ...},
+  "progress": {"current_pct": 50, "message": "正在尝试，进展中"},
   "issues": [{"category": "syntax_error", "severity": "error", "message": "..."}],
   "diagnosis": "PRIMARY KEY 约束缺失，SERIAL 语法错误",
   "suggestion": "将 id 字段改为: id SERIAL PRIMARY KEY",
-  "needs_teacher": true,
   "suggested_action": "popup"
 }
 ```
-
-### POST /validate
-
-规则引擎校验 SQL（无 LLM 调用）。
 
 ### POST /batch
 
@@ -165,7 +159,7 @@ class AgentDiagnosis(BaseModel):
 | `llm_base_url` | `system.settings` / `LLM_BASE_URL` | `https://api.deepseek.com/v1` |
 | `llm_model` | `system.settings` / `LLM_MODEL` | `deepseek-chat` |
 
-未配置时，全部回退使用 `PriorityScorer` 规则评分。
+未配置时 `/analyze` 返回 503，`/batch` 返回 clear。
 
 ## 框架
 
@@ -178,7 +172,7 @@ Pydantic AI (`pydantic-ai-slim`)，所有 Agent 使用 `result_type` 做结构�
 ## 文件结构
 
 ```
-ai-gateway/src/
+packages/ai-gateway/src/
 ├── main.py                # FastAPI 入口
 ├── config.py              # LLM 配置加载
 ├── agents/
@@ -188,10 +182,6 @@ ai-gateway/src/
 │   ├── sql_agent.py       # SQL Agent（LLM + execute_query tool）
 │   ├── orchestrator.py    # Judge（LLM + get_task_context tool）
 │   └── batch_agent.py     # Batch 过滤器（LLM）
-├── analyzers/
-│   ├── __init__.py
-│   ├── progress.py        # 规则引擎进度分析（无 LLM 时的 fallback）
-│   └── priority.py        # 规则引擎优先级评分
 └── schemas/
     ├── __init__.py
     └── models.py          # API 请求/响应模型

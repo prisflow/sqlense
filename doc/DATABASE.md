@@ -32,29 +32,8 @@ erDiagram
         varchar status "active | inactive | disabled"
         timestamp created_at
     }
-
-    tasks {
-        uuid id PK
-        varchar title
-        text description
-        text setup_sql
-        jsonb checks "校验规则"
-        jsonb score_rules "评分规则"
-        timestamp created_at
-    }
-
-    submissions {
-        uuid id PK
-        uuid student_id FK "→ students.id"
-        uuid task_id FK "→ tasks.id"
-        text sql_text "学生提交的 SQL"
-        float score
-        text feedback
-        varchar status "pending | passed | failed"
-        timestamp created_at
-    }
-
-    audit_logs {
+ 
+     audit_logs {
         uuid id PK
         uuid user_id FK "→ users.id"
         varchar username
@@ -62,6 +41,18 @@ erDiagram
         varchar action "事件类型"
         jsonb detail
         varchar ip
+        timestamp created_at
+    }
+
+    task_files {
+        uuid id PK
+        uuid class_id FK "→ classes.id"
+        varchar task_group "任务分组名称"
+        varchar filename
+        varchar filepath
+        int filesize
+        varchar mime
+        uuid uploaded_by FK "→ users.id"
         timestamp created_at
     }
 
@@ -91,7 +82,6 @@ graph TB
 ```
 db_student_2024001  ← 数据库
 role_student_2024001  ← 角色（有登录权限）
-  └── lab schema（实验用）
 ```
 
 学生容器内的 psql 凭证在创建时固化，学生无法访问其他库。

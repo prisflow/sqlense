@@ -121,46 +121,7 @@ describe("TelemetryTracker", () => {
 npx vitest run src/telemetryTracker.test.ts
 ```
 
-### 测试对象: PriorityScorer (Python)
-
-**前置**: 安装 pytest
-
-```bash
-cd ai-gateway
-pip install pytest 2>/dev/null
-```
-
-**测试文件**: `tests/test_priority.py`
-
-```python
-import pytest
-from analyzers.priority import PriorityScorer
-from schemas.models import PriorityLevel, ProgressMetrics
-
-scorer = PriorityScorer()
-
-def test_critical():
-    m = ProgressMetrics(errors=5, last_action_ago=180, idle_seconds=200, started=True)
-    assert scorer.score(m) == PriorityLevel.CRITICAL
-
-def test_low():
-    m = ProgressMetrics(errors=0, last_action_ago=10, idle_seconds=0, started=True, current_pct=0.9)
-    assert scorer.score(m) == PriorityLevel.LOW
-
-def test_medium_not_started():
-    m = ProgressMetrics(errors=0, last_action_ago=10, idle_seconds=0, started=False)
-    assert scorer.score(m) == PriorityLevel.MEDIUM
-
-def test_high_errors():
-    m = ProgressMetrics(errors=3, last_action_ago=30, idle_seconds=10, started=True)
-    assert scorer.score(m) == PriorityLevel.HIGH
-```
-
-**运行**:
-
-```bash
-pytest tests/test_priority.py -v
-```
+## 场景测试
 
 ---
 

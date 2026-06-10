@@ -1,0 +1,45 @@
+{
+  "student_no": "test_14",
+  "scenario": "missing_constraints",
+  "dsn": "postgresql://test_role_14:stu14pass@postgres:5432/test_db_14",
+  "telemetry": [
+    {
+      "type": "error",
+      "timestamp": 1700000000,
+      "payload": {
+        "code": "CREATE TABLE lab.students (id SERIAL, name VARCHAR(50), age INTEGER, email VARCHAR(100), enrolled_at DATE);",
+        "codeHistory": [
+          {
+            "text": "CREATE TABLE students (id int, name text, age int, email text);",
+            "timestamp": 1699999940
+          },
+          {
+            "text": "CREATE TABLE lab.students (id SERIAL, name VARCHAR(50), age INTEGER, email VARCHAR(100), enrolled_at DATE);",
+            "timestamp": 1699999970
+          }
+        ]
+      }
+    },
+    {
+      "type": "terminal",
+      "timestamp": 1700000000,
+      "payload": {
+        "output": "CREATE TABLE lab.students (id SERIAL, name VARCHAR(50), age INTEGER, email VARCHAR(100), enrolled_at DATE);\nCREATE TABLE"
+      }
+    },
+    {
+      "type": "terminal",
+      "timestamp": 1700000000,
+      "payload": {
+        "output": "SELECT column_name, is_nullable, column_default FROM information_schema.columns WHERE table_schema='lab' AND table_name='students' ORDER BY ordinal_position;\n column_name | is_nullable | column_default\n-------------+-------------+----------------\n id          | YES         |\n name        | YES         |\n age         | YES         |\n email       | YES         |\n enrolled_at | YES         |\n(5 rows)"
+      }
+    },
+    {
+      "type": "idle",
+      "timestamp": 1700000000,
+      "payload": {
+        "duration": 120
+      }
+    }
+  ]
+}

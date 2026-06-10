@@ -7,8 +7,7 @@ dist/
 __pycache__/
 *.pyc
 .ai_completion/
-docker/student/extensions/node_modules/
-students/
+packages/vs-code-extension/node_modules/
 .venv/
 tests/load/__pycache__/
 tests/scenarios/layers/__pycache__/

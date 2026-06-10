@@ -3,12 +3,13 @@ set -e
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT/tests/scenarios"
 
+# 设置主数据库连接参数
 echo "[setup] 使用主 PostgreSQL ($PGHOST:5432)"
 PGHOST="${PGHOST:-localhost}"
 PGURL="postgresql://sqlense:sqlense@${PGHOST}:5432"
 SYSTEM_DB="${PGURL}/sqlense"
 
-# ── 30 个学生: 10 correct + 8 missing_constraints + 7 not_started + 5 off_track ──
+# 定义30个测试学生的数据库、角色、场景配置
 STUDENTS=(
   "test_db_01:test_role_01:stu01pass:correct"
   "test_db_02:test_role_02:stu02pass:correct"
@@ -42,33 +43,30 @@ STUDENTS=(
   "test_db_30:test_role_30:stu30pass:off_track"
 )
 
+# 创建 30 个学生数据库和角色，注入场景数据
 for entry in "${STUDENTS[@]}"; do
   IFS=':' read -r db role pwd scenario <<<"$entry"
   echo "[setup] $db / $role"
 
-  # 角色
   psql "$SYSTEM_DB" -tc "SELECT 1 FROM pg_roles WHERE rolname='$role'" | grep -q 1 || \
     psql "$SYSTEM_DB" -c "CREATE ROLE $role WITH LOGIN PASSWORD '$pwd';"
 
-  # 数据库
   psql "$SYSTEM_DB" -tc "SELECT 1 FROM pg_database WHERE datname='$db'" | grep -q 1 || \
     psql "$SYSTEM_DB" -c "CREATE DATABASE $db OWNER $role;"
 
   psql "$SYSTEM_DB" -c "GRANT ALL PRIVILEGES ON DATABASE $db TO $role;"
 
-  # 注入场景数据
   DBURL="${PGURL}/${db}"
   psql "$DBURL" -c "CREATE SCHEMA IF NOT EXISTS lab AUTHORIZATION $role;"
   if [ -f "data/${scenario}.sql" ]; then
     psql "$DBURL" -f "data/${scenario}.sql"
   fi
-  # 让 test_role 能看到 lab schema 中的表（便于 AI Gateway 预查数据库结构）
   psql "$DBURL" -c "GRANT SELECT ON ALL TABLES IN SCHEMA lab TO $role;"
   psql "$DBURL" -c "ALTER DEFAULT PRIVILEGES IN SCHEMA lab GRANT SELECT ON TABLES TO $role;"
   echo "  → 完成"
 done
 
-# ── 注册到 system.students ──
+# 注册 30 个学生到 system.users 和 system.students
 echo "[setup] 注册学生到 system.students..."
 
 for i in $(seq 1 30); do

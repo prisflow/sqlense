@@ -3,6 +3,7 @@ set -e
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT/tests/scenarios"
 
+# 删除所有学生 system 记录、数据库和角色
 echo "[teardown] 清理 30 个测试学生..."
 
 PGURL="postgresql://sqlense:sqlense@localhost:5432/sqlense"

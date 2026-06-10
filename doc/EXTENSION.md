@@ -48,8 +48,8 @@ graph TB
 
 | 触发条件 | 事件类型 | 负载内容 |
 |---------|---------|---------|
-| 终端报错 (ERROR / syntax error) | `error` | `message`, `code`(当前快照), `codeHistory`(最近5个) |
-| 诊断红色波浪线持续≥5秒且累计≥2次 | `error` | `source: "diagnostics"`, `code`, `codeHistory`, `errors[]` |
+| IDE 红线（pgsql-ast-parser 语法错误）持续≥5秒且累计≥2次 | `error` | `source: "diagnostics"`, `code`, `codeHistory`, `errors[]` |
+| SQL 执行报错（SQLTools 返回 ERROR / does not exist） | `error` | `source: "sqltools"`, `code`, `codeHistory`, `message` |
 | 空闲超过 3 分钟 | `idle` | `duration` |
 
 ### 代码历史记录

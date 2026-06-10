@@ -8,30 +8,30 @@ echo "========================================"
 echo " SQLense 场景测试套件"
 echo "========================================"
 
-# ── Phase 1: 初始化 30 个数据库 + 注册学生 ──
 echo ""
+# Phase 1: 创建30个测试数据库和角色
 echo "[phase 1] 初始化 30 个测试数据库..."
 bash setup.sh
 
-# ── Phase 2: 生成 student JSON ──
 echo ""
+# Phase 2: 生成30个学生的遥测数据
 echo "[phase 2] 生成 student JSON..."
 python3 students/generate.py
 
-# ── Phase 3: Layer 1 — 全局 100 条 Batch ──
 echo ""
 echo "────────────────────────────────────────"
 echo " Layer 1: 全局 Batch 触发"
 echo "────────────────────────────────────────"
+# Phase 3: 发送100条全局事件触发batch分析
 python3 layers/layer1_global.py 2>&1 | tee /tmp/layer1_out.txt
 LAYER1_A=$(python3 -c "import json; r=json.load(open('layers/layer1_report.json')); print(r.get('analyses',0))")
 echo "  Layer 1 分析数: $LAYER1_A"
 
-# ── Phase 4: Layer 2 — 单生高频 ──
 echo ""
 echo "────────────────────────────────────────"
 echo " Layer 2: 单生高频触发"
 echo "────────────────────────────────────────"
+# Phase 4: 单学生高频发送触发flushStudent分析
 echo " 等待 Layer 1 残留请求消散 (30s)..."
 sleep 30
 docker compose -f "$ROOT/docker-compose.yml" restart websocket
@@ -40,22 +40,22 @@ python3 layers/layer2_highfreq.py 2>&1 | tee /tmp/layer2_out.txt
 LAYER2_A=$(python3 -c "import json; r=json.load(open('layers/layer2_report.json')); print(r.get('analyses',0))")
 echo "  Layer 2 分析数: $LAYER2_A"
 
-# ── Phase 5: Layer 3 — 全量直接分析 ──
 echo ""
 echo "────────────────────────────────────────"
 echo " Layer 3: 全量学生直接验证"
 echo "────────────────────────────────────────"
+# Phase 5: 直接POST分析所有学生的遥测数据
 python3 layers/layer3_direct.py 2>&1 | tee /tmp/layer3_out.txt
 LAYER3_P=$(python3 -c "import json; r=json.load(open('layers/layer3_report.json')); print(r.get('passed',0))")
 LAYER3_T=$(python3 -c "import json; r=json.load(open('layers/layer3_report.json')); print(r.get('analyses',0))")
 echo "  Layer 3: $LAYER3_P/$LAYER3_T 通过"
 
-# ── Phase 6: 报告 ──
 echo ""
 echo "========================================"
 echo " 测试报告"
 echo "========================================"
 
+# Phase 6: 汇总三层报告并输出结论
 python3 -c "
 import json
 r1 = json.load(open('layers/layer1_report.json'))

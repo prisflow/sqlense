@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
-"""
-Layer 1: 全局 100 条 Batch 测试
-从 30 个学生中各挑 3-4 条事件，拼成 100+ 条，
-通过 WS 发送后验证 flushGlobal 触发 /batch 并推送分析。
-"""
 import json, sys, os, time, asyncio
 from socketio import Client
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 WS_URL = "http://localhost:3001"
 
+# 加载30个学生数据，各取3-4条发送
 async def run():
     # 加载所有学生数据
     events_batch = []
@@ -30,6 +26,7 @@ async def run():
     errors = []
 
     @teacher.on("teacher:ai-analysis")
+    # 收到AI分析结果并打印
     def on_analysis(data):
         analyses.append(data)
         a = data.get("analysis", {})
@@ -42,6 +39,7 @@ async def run():
             print(f"         建议: {sug}...")
 
     @teacher.on("teacher:error")
+    # 收到教师端错误消息
     def on_error(data):
         errors.append(data)
         print(f"  [错误] {data}")
@@ -75,6 +73,7 @@ async def run():
     print(f"\n[layer1] 收到分析: {len(analyses)}, 错误: {len(errors)}")
     return analyses, errors
 
+# 主入口：执行测试并输出报告
 if __name__ == "__main__":
     results = asyncio.run(run())
     details = []

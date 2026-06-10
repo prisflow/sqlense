@@ -1,0 +1,52 @@
+{
+  "student_no": "test_23",
+  "scenario": "not_started",
+  "dsn": "postgresql://test_role_23:stu23pass@postgres:5432/test_db_23",
+  "telemetry": [
+    {
+      "type": "error",
+      "timestamp": 1700000000,
+      "payload": {
+        "code": "SELECT * FROM lab.students;",
+        "codeHistory": [
+          {
+            "text": "SELECT * FROM students;",
+            "timestamp": 1699999940
+          },
+          {
+            "text": "SELECT * FROM lab.students;",
+            "timestamp": 1699999970
+          }
+        ]
+      }
+    },
+    {
+      "type": "terminal",
+      "timestamp": 1700000000,
+      "payload": {
+        "output": "SELECT * FROM lab.students;\nERROR: relation 'lab.students' does not exist\nLINE 1: SELECT * FROM lab.students;\n                      ^\nHINT: No schema has been selected to create in\n"
+      }
+    },
+    {
+      "type": "terminal",
+      "timestamp": 1700000000,
+      "payload": {
+        "output": "SELECT * FROM lab.students;\nERROR: relation 'students' does not exist\nLINE 1: SELECT * FROM students;\n                      ^\n"
+      }
+    },
+    {
+      "type": "terminal",
+      "timestamp": 1700000000,
+      "payload": {
+        "output": "\\dn\n   List of schemas\n   Name   |  Owner\n----------+---------\n lab      | test_role_N\n public   | testadmin\n(2 rows)"
+      }
+    },
+    {
+      "type": "idle",
+      "timestamp": 1700000000,
+      "payload": {
+        "duration": 300
+      }
+    }
+  ]
+}

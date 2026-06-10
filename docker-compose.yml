@@ -1,9 +1,16 @@
+# ============================================================
+# SQLense — 数据库实验教学平台
+# 7 个容器：postgres / api-server / websocket / ai-gateway /
+#            auth-proxy / web / student-1
+# ============================================================
+
 name: sqlense
 
+# ── 学生容器基础模板 ──
+# 所有 student-N 服务共享的配置（端口/环境/依赖除外）
 x-student-base: &student-base
   build:
-    context: ./docker/student
-    dockerfile: Dockerfile
+    context: ./packages/vs-code-extension
   environment:
     SUDO_PASSWORD: "sqlense"
     WS_SERVER: ws://websocket:3001
@@ -17,6 +24,7 @@ x-student-base: &student-base
       condition: service_healthy
 
 services:
+  # ─── 1. PostgreSQL — 系统数据库 ────────────────────────────
   postgres:
     image: postgres:16-alpine
     ports:
@@ -26,14 +34,16 @@ services:
       POSTGRES_PASSWORD: sqlense
       POSTGRES_DB: sqlense
     volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./docker/api/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
-      - ./docker/api/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      - pgdata:/var/lib/postgresql/data          # 持久化存储
+      - ./packages/api-server/sql/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro   # 建表语句
+      - ./packages/api-server/sql/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro   # 预设数据
     healthcheck:
+      # 先检查 pg 就绪，再确认 seed 已执行完成（system.users 表有数据）
       test: ["CMD-SHELL", "pg_isready -U sqlense -d sqlense && psql -U sqlense -d sqlense -c 'SELECT 1 FROM system.users LIMIT 1'"]
       interval: 3s
       retries: 20
 
+  # ─── 2. API Server — Express REST 接口 ─────────────────────
   api-server:
     build:
       context: ./packages/api-server
@@ -42,22 +52,24 @@ services:
       - "4000:4000"
     environment:
       API_PORT: 4000
-      JWT_SECRET: ${JWT_SECRET:-sqlense-dev-secret}
+      JWT_SECRET: ${JWT_SECRET:-sqlense-dev-secret}   # JWT 签名密钥，生产环境务必修改
       PG_HOST: postgres
       PG_PORT: 5432
       PG_USER: sqlense
       PG_PASSWORD: sqlense
       PG_DATABASE: sqlense
-      COMPOSE_PROJECT_NAME: sqlense
-      FILE_DIR: /srv/files
+      COMPOSE_PROJECT_NAME: sqlense                    # Docker Compose 项目名，用于容器命名
+      STUDENT_IMAGE: sqlense-student:latest            # 导入时拉取的学生容器镜像
+      FILE_DIR: /srv/files                             # 教师共享文件的存储目录
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./docker-compose.yml:/app/docker-compose.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro   # 挂载 Docker socket，用于管理学生容器
+      - ./docker-compose.yml:/app/docker-compose.yml:ro # 供 api-server 读取 compose 配置
       - files:/srv/files
     depends_on:
       postgres:
         condition: service_healthy
 
+  # ─── 3. WebSocket 服务器 ──────────────────────────────────
   websocket:
     restart: unless-stopped
     build:
@@ -67,8 +79,8 @@ services:
       - "3001:3001"
     environment:
       PORT: 3001
-      API_PORT: 3100
-      AI_GATEWAY_URL: http://ai-gateway:8000
+      API_PORT: 3100                                    # 内部转发 AI 分析请求的端口
+      AI_GATEWAY_URL: http://ai-gateway:8000            # AI 网关地址
       PG_HOST: postgres
       PG_PORT: 5432
       PG_USER: sqlense
@@ -78,17 +90,19 @@ services:
       postgres:
         condition: service_healthy
 
+  # ─── 4. AI Gateway — Python FastAPI ────────────────────────
+  # 接收 WS 服务器转发的遥测，运行 LLM 分析（Code/SQL/Judge Agent）
   ai-gateway:
     build:
-      context: .
-      dockerfile: docker/gateway/Dockerfile
+      context: ./packages/ai-gateway
     ports:
       - "8000:8000"
     environment:
+      # LLM 配置：未配置时回退规则引擎（PriorityScorer）
       LLM_API_KEY: ${LLM_API_KEY:-sk-placeholder}
       LLM_BASE_URL: ${LLM_BASE_URL:-https://api.deepseek.com/v1}
       LLM_MODEL: ${LLM_MODEL:-deepseek-chat}
-      PG_DSN: postgresql://sqlense:sqlense@postgres:5432/sqlense
+      PG_DSN: postgresql://sqlense:sqlense@postgres:5432/sqlense  # 连接系统 DB 读任务文件
       FILE_DIR: /srv/files
     volumes:
       - files:/srv/files
@@ -96,6 +110,8 @@ services:
       postgres:
         condition: service_healthy
 
+  # ─── 5. Auth Proxy — Nginx 反向代理 ──────────────────────
+  # 对学生 code-server 做 auth_request 鉴权，阻止未登录访问
   auth-proxy:
     build:
       context: ./packages/auth-proxy
@@ -105,20 +121,25 @@ services:
     depends_on:
       - api-server
 
-  teacher-dashboard:
+  # ─── 6. Web — React SPA（教师控制台 + 学生仪表盘） ────────
+  web:
     restart: unless-stopped
     build:
-      context: ./packages/teacher-dashboard
+      context: ./packages/web
       dockerfile: Dockerfile
     ports:
-      - "3000:80"
+      - "3000:80"                      # 宿主机 3000 → 容器内 nginx 80
     depends_on:
       - api-server
       - websocket
       - ai-gateway
 
+  # ─── 7. 学生容器（示例：2024001 张三） ─────────────────────
+  # 继承 student-base 模板，生产环境通过导入 API 动态创建。
+  # 端口：8443 固定给 student-1，后续容器从 8444 开始递增。
   student-1:
     <<: *student-base
+    image: sqlense-student:latest       # 构建后打标签，供 api-server 动态创建新容器时引用
     ports: ["8443:8443"]
     environment:
       STUDENT_NO: "2024001"
@@ -126,9 +147,9 @@ services:
       PG_DATABASE: "db_student_2024001"
       PG_USER: "role_student_2024001"
       PG_PASSWORD: "stu2024001"
-    volumes: ["student1-data:/config"]
+    volumes: ["student1-data:/config"]   # code-server 配置目录持久化
 
 volumes:
-  pgdata:
-  student1-data:
-  files:
+  pgdata:          # PostgreSQL 数据持久化（Docker 自动创建 named volume）
+  student1-data:   # student-1 的 code-server 配置目录（Docker 自动创建）
+  files:           # 教师共享文件存储（Docker 自动创建）

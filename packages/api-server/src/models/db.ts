@@ -1,5 +1,6 @@
 import pg from "pg";
 
+// 后台数据库的连接
 const pool = new pg.Pool({
   host: process.env.PG_HOST || "postgres",
   port: Number(process.env.PG_PORT) || 5432,

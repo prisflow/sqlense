@@ -28,7 +28,7 @@ docker compose up -d --build
 ├── websocket          — Socket.IO 实时事件总线
 ├── ai-gateway         — Python FastAPI, 多 Agent 智能分析
 ├── auth-proxy         — Nginx auth_request, code-server 认证网关
-├── teacher-dashboard  — Nginx + React SPA, 教师监控面板
+├── web               — Nginx + React SPA, 教师监控面板
 └── student-N          — code-server, 每人独立 IDE 容器
 ```
 
@@ -52,7 +52,7 @@ graph TB
 ### 实时监控
 - 基于 VS Code Extension 的 Telemetry Tracker
 - 学生 SQL 执行、编辑器状态、诊断错误、空闲状态实时上报
-- 双缓冲策略: 单生高频 (5条/10s 触发分析) + 全局批量 (100条触发分析)
+- 双缓冲策略: 单生高频 (2条/10s 触发分析) + 全局批量 (100条触发分析)
 
 ### AI 分析引擎
 基于 Pydantic AI 的多 Agent 架构:

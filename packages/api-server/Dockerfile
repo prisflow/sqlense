@@ -1,3 +1,5 @@
+# ── Build Stage ──
+# 编译 TypeScript → JavaScript
 FROM node:22-alpine AS builder
 WORKDIR /app
 COPY package.json package-lock.json ./
@@ -5,7 +7,9 @@ RUN npm ci
 COPY . .
 RUN npx tsc
 
+# ── Production Stage ──
 FROM node:22-alpine
+# docker-cli 和 docker-compose 供 admin 路由中 execSync 调用 docker 管理学生容器
 RUN apk add --no-cache docker-cli docker-compose
 WORKDIR /app
 COPY package.json package-lock.json ./

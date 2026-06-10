@@ -1,9 +1,10 @@
 # SQLense — AGENTS.md
 
 ## User expectations
-- **No technical explanations.** Show results, don't explain how.
-- **Vibe coding.** User won't review code, but expects things to work and look good.
+- **All code is reviewed.** Every line of code, comment, and config will be reviewed. Write clean, well-commented code.
+- **Add function-level comments** to every method/function explaining what it does and why.
 - **Light/clean design.** No dark "AI" themes, no bright purple/indigo accents, no icons in page content (lucide is internal to shadcn components only).
+- **Python environment uses micromamba.** Located at `/home/tobegold574/.local/bin/micromamba`. Never use venv or pip directly.
 
 ## Quick commands
 
@@ -12,7 +13,7 @@
 docker compose build && docker compose up -d
 
 # fast rebuild — only restart changed service
-docker compose build teacher-dashboard && docker compose up -d --no-deps teacher-dashboard
+docker compose build web && docker compose up -d --no-deps web
 
 # clean restart (removes all data)
 docker compose down -v && docker compose up -d --build
@@ -21,7 +22,7 @@ docker compose down -v && docker compose up -d --build
 docker compose ps
 
 # logs
-docker compose logs -f teacher-dashboard
+docker compose logs -f web
 ```
 
 ## Architecture (7 containers)
@@ -33,7 +34,7 @@ docker compose logs -f teacher-dashboard
 | websocket | 3001 | Socket.IO real-time events |
 | ai-gateway | 8000 | Python FastAPI, telemetry analysis |
 | auth-proxy | 8080 | Nginx auth_request gate for code-server |
-| teacher-dashboard | 3000 | Nginx + React SPA |
+| web | 3000 | Nginx + React SPA |
 | student-1 | 8443 | code-server (--auth none, behind auth-proxy) |
 
 ## Auth
@@ -64,9 +65,9 @@ docker compose logs -f teacher-dashboard
 | 2024002 | stu2024002 | student |
 
 ## Database
-- System tables: `system.users`, `system.classes`, `system.students`, `system.tasks`, `system.submissions`, `system.audit_logs`
+- System tables: `system.users`, `system.classes`, `system.students`, `system.task_files`, `system.settings`, `system.audit_logs`
 - Each student has separate PG database (`db_student_*`) and role (`role_student_*`) — created by provision script
-- `seed.sql` in `docker/api/` has preset data with real bcrypt hashes
+- `seed.sql` in `packages/api-server/sql/` has preset data with real bcrypt hashes
 
 ## Provisioning
 Import via admin API (`POST /api/admin/students/import`) or admin UI CSV dialog.

@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
-"""
-Layer 3: 全量学生直接分析验证
-直接 POST /analyze 给全部 30 个学生（不走 WS/Tracker 过滤），
-验证每个学生的优先级是否符合场景预期。
-"""
 import json, sys, os, requests
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 AI_URL = "http://localhost:8000"
 
-# 预期优先级: correct→low, missing_constraints→high, not_started→high, off_track→high/critical
+# 定义30个学生的预期优先级映射
 EXPECTED = {}
 for i in range(1, 11):
     EXPECTED[f"test_{i:02d}"] = {"scenario": "correct", "expected": ["low"]}
@@ -20,6 +15,7 @@ for i in range(19, 26):
 for i in range(26, 31):
     EXPECTED[f"test_{i:02d}"] = {"scenario": "off_track", "expected": ["high", "critical"]}
 
+# 遍历30个学生，逐个发送POST分析请求
 results = []
 
 for i in range(1, 31):
@@ -76,6 +72,7 @@ for i in range(1, 31):
         })
         print(f"  ❌ {sid}: 异常 {e}")
 
+# 统计通过率并输出报告
 passed = sum(1 for r in results if r["pass"])
 total = len(results)
 print(f"\n[layer3] {passed}/{total} 通过")

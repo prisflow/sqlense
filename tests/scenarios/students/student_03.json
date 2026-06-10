@@ -1,0 +1,35 @@
+{
+  "student_no": "test_03",
+  "scenario": "correct",
+  "dsn": "postgresql://test_role_03:stu03pass@postgres:5432/test_db_03",
+  "telemetry": [
+    {
+      "type": "terminal",
+      "timestamp": 1700000000,
+      "payload": {
+        "output": "SELECT column_name, data_type FROM information_schema.columns WHERE table_schema='lab' AND table_name='students' ORDER BY ordinal_position;\n column_name | data_type\n-------------+-----------\n id          | integer\n name        | character varying\n age         | integer\n email       | character varying\n enrolled_at | date\n(5 rows)"
+      }
+    },
+    {
+      "type": "terminal",
+      "timestamp": 1700000000,
+      "payload": {
+        "output": "INSERT INTO lab.students (name, age, email) VALUES ('测试学生', 20, 'test@example.com');\nINSERT 0 1"
+      }
+    },
+    {
+      "type": "terminal",
+      "timestamp": 1700000000,
+      "payload": {
+        "output": "SELECT * FROM lab.students;\n id |  name  | age |      email       | enrolled_at\n----+--------+-----+------------------+-------------\n  1 | 测试学生 |  20 | test@example.com | 2025-09-01\n(1 row)"
+      }
+    },
+    {
+      "type": "idle",
+      "timestamp": 1700000000,
+      "payload": {
+        "duration": 200
+      }
+    }
+  ]
+}
