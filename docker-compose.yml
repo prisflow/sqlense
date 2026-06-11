@@ -37,6 +37,7 @@ services:
       - pgdata:/var/lib/postgresql/data          # 持久化存储
       - ./packages/api-server/sql/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro   # 建表语句
       - ./packages/api-server/sql/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro   # 预设数据
+      - ./packages/api-server/sql/03-create-dbs.sql:/docker-entrypoint-initdb.d/03-create-dbs.sql:ro   # 创建学生库
     healthcheck:
       # 先检查 pg 就绪，再确认 seed 已执行完成（system.users 表有数据）
       test: ["CMD-SHELL", "pg_isready -U sqlense -d sqlense && psql -U sqlense -d sqlense -c 'SELECT 1 FROM system.users LIMIT 1'"]

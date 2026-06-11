@@ -57,4 +57,3 @@ curl -b /tmp/cookie http://localhost:4000/api/admin/dashboard
 | `admin` | `admin` | admin |
 | `teacher` | `teacher` | teacher |
 | `2024001` | `stu2024001` | student |
-| `2024002` | `stu2024002` | student |

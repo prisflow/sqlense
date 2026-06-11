@@ -5,6 +5,8 @@
 # Code / SQL / Judge 三位一体的学生进度分析。
 FROM mambaorg/micromamba:latest
 
+ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+
 COPY --chown=$MAMBA_USER:$MAMBA_USER environment.yml /tmp/environment.yml
 RUN micromamba install -y -n base -f /tmp/environment.yml && \
     micromamba clean --all -y
