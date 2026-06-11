@@ -6,6 +6,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectL
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 
 interface ClassItem { id: string; name: string; created_at: string; teacher_id: string | null; teacher_name: string | null; }
 interface Teacher { id: string; display_name: string; }
@@ -14,18 +15,20 @@ interface Teacher { id: string; display_name: string; }
 export default function AdminClasses() {
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [teacherId, setTeacherId] = useState("");
 
-  // 加载班级和教师列表数据
   const load = () => {
-    fetch("/api/admin/classes").then(r => r.json()).then(d => setClasses(d.classes)).catch(e => { console.error(e); toast.error("加载失败"); });
-    fetch("/api/admin/teachers").then(r => r.json()).then(d => setTeachers(d.teachers)).catch(e => { console.error(e); toast.error("加载失败"); });
+    setLoading(true);
+    Promise.all([
+      fetch("/api/admin/classes").then(r => r.json()).then(d => setClasses(d.classes)).catch(e => { console.error(e); toast.error("加载失败"); }),
+      fetch("/api/admin/teachers").then(r => r.json()).then(d => setTeachers(d.teachers)).catch(e => { console.error(e); toast.error("加载失败"); }),
+    ]).finally(() => setLoading(false));
   };
   useEffect(() => { load(); }, []);
 
-  // 创建新班级
   const create = async () => {
     if (!name) return;
     await fetch("/api/admin/classes", {
@@ -35,7 +38,6 @@ export default function AdminClasses() {
     setName(""); setTeacherId(""); setOpen(false); load();
   };
 
-  // 修改班级的班主任
   const editTeacher = async (classId: string, tid: string | null) => {
     await fetch(`/api/admin/classes/${classId}`, {
       method: "PUT", headers: { "Content-Type": "application/json" },
@@ -44,7 +46,6 @@ export default function AdminClasses() {
     load();
   };
 
-  // 删除班级及其关联数据
   const remove = async (id: string) => {
     await fetch(`/api/admin/classes/${id}`, { method: "DELETE" });
     load();
@@ -78,6 +79,11 @@ export default function AdminClasses() {
           </DialogContent>
         </Dialog>
       </div>
+      {loading ? (
+        <TableSkeleton cols={4} rows={5} />
+      ) : classes.length === 0 ? (
+        <div className="text-center text-gray-500 py-12">暂无班级</div>
+      ) : (
       <Table>
         <TableHeader>
           <TableRow>
@@ -121,6 +127,7 @@ export default function AdminClasses() {
           ))}
         </TableBody>
       </Table>
+      )}
     </div>
   );
 }

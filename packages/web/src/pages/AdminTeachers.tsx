@@ -6,17 +6,21 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 
 interface Teacher { id: string; username: string; display_name: string; created_at: string; }
 
 // 教师管理页面，支持增删教师账号
 export default function AdminTeachers() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [u, setU] = useState({ username: "", password: "", displayName: "" });
 
-  // 加载教师列表
-  const load = () => fetch("/api/admin/teachers").then(r => r.json()).then(d => setTeachers(d.teachers)).catch(e => { console.error(e); toast.error("加载失败"); });
+  const load = () => {
+    setLoading(true);
+    fetch("/api/admin/teachers").then(r => r.json()).then(d => { setTeachers(d.teachers); setLoading(false); }).catch(e => { console.error(e); toast.error("加载失败"); setLoading(false); });
+  };
   useEffect(() => { load(); }, []);
 
   // 创建新教师账号
@@ -53,6 +57,11 @@ export default function AdminTeachers() {
           </DialogContent>
         </Dialog>
       </div>
+      {loading ? (
+        <TableSkeleton cols={4} rows={5} />
+      ) : teachers.length === 0 ? (
+        <div className="text-center text-gray-500 py-12">暂无教师</div>
+      ) : (
       <Table>
         <TableHeader>
           <TableRow>
@@ -85,6 +94,7 @@ export default function AdminTeachers() {
           ))}
         </TableBody>
       </Table>
+      )}
     </div>
   );
 }

@@ -3,7 +3,7 @@
 FROM node:22-alpine AS builder
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm config set registry https://registry.npmmirror.com && npm ci
+RUN npm ci
 COPY . .
 RUN npx tsc
 
@@ -14,7 +14,7 @@ RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositorie
     apk add --no-cache docker-cli docker-compose
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm config set registry https://registry.npmmirror.com && npm ci --only=production
+RUN npm ci --only=production
 COPY --from=builder /app/dist/ .
 EXPOSE 4000
 CMD ["node", "index.js"]

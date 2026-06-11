@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectLabel, SelectItem } from "@/components/ui/select";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 
 interface LogEntry { id: string; username: string; role: string; action: string; detail: Record<string, unknown>; created_at: string; }
 
@@ -29,17 +30,20 @@ const dayItems = [
 ];
 
 // 操作日志查询页面，按类型和时间筛选
+// 操作日志查询页面，按类型和时间筛选
 export default function AdminLogs() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
   const [actionFilter, setActionFilter] = useState("all");
   const [days, setDays] = useState("1");
 
   // 加载日志数据
   const load = () => {
+    setLoading(true);
     const p = new URLSearchParams();
     if (actionFilter && actionFilter !== "all") p.set("action", actionFilter);
     p.set("days", days);
-    fetch(`/api/admin/logs?${p}`).then(r => r.json()).then(d => setLogs(d.logs)).catch(e => { console.error(e); toast.error("加载失败"); });
+    fetch(`/api/admin/logs?${p}`).then(r => r.json()).then(d => { setLogs(d.logs); setLoading(false); }).catch(e => { console.error(e); toast.error("加载失败"); setLoading(false); });
   };
   useEffect(() => { load(); }, [actionFilter, days]);
 
@@ -74,6 +78,11 @@ export default function AdminLogs() {
           </SelectContent>
         </Select>
       </div>
+      {loading ? (
+        <TableSkeleton cols={5} rows={8} />
+      ) : logs.length === 0 ? (
+        <div className="text-center text-gray-500 py-8">暂无日志</div>
+      ) : (
       <Table>
         <TableHeader>
           <TableRow>
@@ -94,11 +103,9 @@ export default function AdminLogs() {
               <TableCell className="text-gray-700 text-xs max-w-xs truncate">{JSON.stringify(l.detail)}</TableCell>
             </TableRow>
           ))}
-          {logs.length === 0 && (
-            <TableRow><TableCell colSpan={5} className="text-center text-gray-500 py-8">暂无日志</TableCell></TableRow>
-          )}
         </TableBody>
       </Table>
+      )}
     </div>
   );
 }

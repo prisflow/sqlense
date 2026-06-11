@@ -7,6 +7,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 
 interface Student { id: string; display_name: string; student_no: string; status: string; class_name: string; cs_port: number; }
 interface ClassItem { id: string; name: string; }
@@ -15,16 +16,21 @@ interface ClassItem { id: string; name: string; }
 export default function AdminStudents() {
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [csvText, setCsvText] = useState("");
   const [classId, setClassId] = useState("");
   const [result, setResult] = useState("");
 
-  // 加载学生列表
-  const load = () => fetch("/api/admin/students").then(r => r.json()).then(d => setStudents(d.students)).catch(e => { console.error(e); toast.error("加载失败"); });
-  // 加载班级列表
-  const loadClasses = () => fetch("/api/admin/classes").then(r => r.json()).then(d => setClasses(d.classes)).catch(e => { console.error(e); toast.error("加载失败"); });
-  useEffect(() => { load(); loadClasses(); }, []);
+  // 加载学生和班级列表
+  const load = () => {
+    setLoading(true);
+    Promise.all([
+      fetch("/api/admin/students").then(r => r.json()).then(d => setStudents(d.students)).catch(e => { console.error(e); toast.error("加载失败"); }),
+      fetch("/api/admin/classes").then(r => r.json()).then(d => setClasses(d.classes)).catch(e => { console.error(e); toast.error("加载失败"); }),
+    ]).finally(() => setLoading(false));
+  };
+  useEffect(() => { load(); }, []);
 
   // 切换学生启用/禁用状态
   const toggle = async (id: string, status: string) => {
@@ -83,6 +89,11 @@ export default function AdminStudents() {
           </DialogContent>
         </Dialog>
       </div>
+      {loading ? (
+        <TableSkeleton cols={6} rows={5} />
+      ) : students.length === 0 ? (
+        <div className="text-center text-gray-500 py-12">暂无学生</div>
+      ) : (
       <Table>
         <TableHeader>
           <TableRow>
@@ -95,7 +106,7 @@ export default function AdminStudents() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {students.map(s => (
+          {students.map((s) => (
             <TableRow key={s.id}>
               <TableCell className="font-medium text-gray-900">{s.display_name}</TableCell>
               <TableCell className="text-gray-700">{s.student_no}</TableCell>
@@ -124,6 +135,7 @@ export default function AdminStudents() {
           ))}
         </TableBody>
       </Table>
+      )}
     </div>
   );
 }
