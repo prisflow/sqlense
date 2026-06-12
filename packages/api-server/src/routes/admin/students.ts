@@ -108,8 +108,8 @@ studentsRouter.post("/students/import", async (req, res) => {
       const port = 8443 + portOffset;
       const escapedPw = s.password.replace(/'/g, "''");
 
-      try { await execSQL(`CREATE ROLE "${roleName}" WITH LOGIN PASSWORD '${escapedPw}'`); } catch (e: unknown) { console.warn(`CREATE ROLE failed for ${s.student_no}:`, e instanceof Error ? e.message : e); }
-      try { await execSQL(`CREATE DATABASE "${dbName}" OWNER "${roleName}"`); } catch (e: unknown) { console.warn(`CREATE DATABASE failed for ${s.student_no}:`, e instanceof Error ? e.message : e); }
+      await execSQL(`CREATE ROLE "${roleName}" WITH LOGIN PASSWORD '${escapedPw}'`);
+      await execSQL(`CREATE DATABASE "${dbName}" OWNER "${roleName}"`);
       try { await execSQL(`GRANT ALL PRIVILEGES ON DATABASE "${dbName}" TO "${roleName}"`); } catch { /* ok */ }
 
       await client.query(
@@ -130,6 +130,7 @@ studentsRouter.post("/students/import", async (req, res) => {
 
   // 创建容器（资源已提交，容器失败只记日志）
   const image = process.env.STUDENT_IMAGE || "sqlense-student:latest";
+  const containerErrors: string[] = [];
   for (const s of parsed.data.students) {
     try {
       const record = await pool.query("SELECT cs_port, cs_password, pg_db_name, pg_role_name FROM system.students WHERE student_no = $1", [s.student_no]);
@@ -142,22 +143,26 @@ studentsRouter.post("/students/import", async (req, res) => {
         --label com.docker.compose.project=${process.env.COMPOSE_PROJECT_NAME || "sqlense"} \
         -p ${r.cs_port}:8443 \
         -e STUDENT_NO=${s.student_no} \
-        -e STUDENT_NAME=${s.student_no} \
-        -e PASSWORD=${r.cs_password} \
+        -e STUDENT_NAME=${s.display_name} \
         -e PG_DATABASE=${r.pg_db_name} \
         -e PG_USER=${r.pg_role_name} \
         -e PG_PASSWORD=${r.cs_password} \
         -e WS_SERVER=ws://websocket:3001 \
         -e PG_HOST=postgres \
-        ${image}`, { stdio: "ignore", timeout: 30000 });
+        ${image}`, { stdio: "pipe", timeout: 30000 });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error(`Failed to start container for ${s.student_no}: ${msg}`);
+      containerErrors.push(`${s.student_no}: ${msg}`);
     }
   }
 
   audit(req.user as any, "import_students", { count: parsed.data.students.length });
-  res.json({ message: "导入成功", count: parsed.data.students.length });
+  res.json({
+    message: "导入成功",
+    count: parsed.data.students.length,
+    ...(containerErrors.length > 0 ? { container_errors: containerErrors } : {}),
+  });
 });
 
 // 检查所有学生容器运行状态

@@ -1,3 +1,4 @@
+import time
 import asyncpg
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.usage import UsageLimits
@@ -18,8 +19,11 @@ async def fetch_db_schema(dsn: str) -> str:
     连接失败时返回错误信息（LLM 会看到并处理）。
     """
     try:
+        t0 = time.time()
         conn = await asyncpg.connect(dsn, timeout=5)
+        print(f"[timing] asyncpg.connect(student_db): {time.time()-t0:.1f}s")
     except Exception as e:
+        print(f"[timing] asyncpg.connect(student_db) FAILED: {e}")
         return f"数据库连接失败: {e}"
 
     try:
@@ -95,6 +99,8 @@ def get_sql_agent() -> Agent:
             """在数据库中执行验证性查询（SELECT / information_schema）。
             数据库完整结构已在上方提供，请勿用于探索性查询。
             只做针对性验证即可，最多 2 次。"""
+            if ctx.deps.query_count >= 2:
+                return "(已达最大查询次数 2/2，请基于已有数据进行分析)"
             ctx.deps.query_count += 1
             conn = await asyncpg.connect(ctx.deps.dsn, timeout=5)
             try:
@@ -131,8 +137,9 @@ async def analyze_sql(terminal_outputs: list[str], dsn: str) -> SQLAgentResult:
 
     schema_info = ""
     if dsn:
-        # 预查：在学生库中查询所有用户表的字段结构
+        t0 = time.time()
         schema_info = await fetch_db_schema(dsn)
+        print(f"[timing] fetch_db_schema: {time.time()-t0:.1f}s")
 
     # 取最近 20 行终端输出
     text = "\n".join(terminal_outputs[-20:]) if terminal_outputs else "(无终端输出)"
@@ -143,9 +150,10 @@ async def analyze_sql(terminal_outputs: list[str], dsn: str) -> SQLAgentResult:
         "数据库结构已在上方提供，最多执行 2 次验证性查询。"
     )
     try:
+        t0 = time.time()
         result = await get_sql_agent().run(prompt, deps=SQLContext(dsn=dsn), usage_limits=UsageLimits(request_limit=None, tool_calls_limit=2))
-        print(f"[usage] SQL agent: {result.usage.requests} requests")
+        print(f"[timing] SQL agent run: {time.time()-t0:.1f}s, {result.usage.requests} requests")
         return result.output
     except Exception as e:
-        print(f"[usage] SQL agent failed: {e}")
+        print(f"[timing] SQL agent failed after {time.time()-t0:.1f}s: {e}")
         return SQLAgentResult(executed_commands=[], errors=[], last_error=str(e), db_tables=[], mismatches=[])

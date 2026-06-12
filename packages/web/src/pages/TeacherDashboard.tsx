@@ -22,7 +22,7 @@ export default function TeacherDashboard() {
   const wsConnected = useStore((s) => s.wsConnected);
   const students = useStore((s) => s.students);
   const selectedStudentId = useStore((s) => s.selectedStudentId);
-  const setStudents = useStore((s) => s.setStudents);
+  const mergeStudent = useStore((s) => s.mergeStudent);
 
   // ========== WebSocket 操作 ==========
   const { requestAnalysis, startTakeover, stopTakeover } = useWebSocket();
@@ -41,16 +41,20 @@ export default function TeacherDashboard() {
   useEffect(() => {
     fetch("/api/dashboard/my-students").then(r => r.json()).then((d) => {
       if (d.students) {
-        const mapped: StudentInfo[] = d.students.map((s: any) => ({
-          studentId: s.student_no,
-          studentName: s.display_name,
-          online: false,
-          takeoverActive: false,
-          csPort: s.cs_port,
-          class_name: s.class_name,
-          lastTelemetry: null,
-        }));
-        setStudents(mapped);
+        const existing = useStore.getState().students;
+        const existingMap = new Map(existing.map((s) => [s.studentId, s]));
+        d.students.forEach((s: any) => {
+          const old = existingMap.get(s.student_no);
+          mergeStudent({
+            studentId: s.student_no,
+            studentName: s.display_name,
+            online: old?.online ?? false,
+            takeoverActive: old?.takeoverActive ?? false,
+            csPort: s.cs_port,
+            class_name: s.class_name,
+            lastTelemetry: old?.lastTelemetry ?? null,
+          } as StudentInfo);
+        });
       }
       setLoading(false);
     }).catch((e) => { console.error("Failed to load teacher data:", e); navigate("/login", { replace: true }); });

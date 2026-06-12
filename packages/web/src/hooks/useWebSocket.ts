@@ -49,22 +49,25 @@ export function useWebSocket() {
     });
 
     socket.on("teacher:ai-analysis", ({ studentId, analysis }: { studentId: string; analysis: AIAnalysis }) => {
-      store.setAnalysis(studentId, analysis);
-
-      if (!analysis.diagnosis && !analysis.suggestion) {
-        toast.warning("AI 分析不可用", {
-          description: "未配置 LLM API Key，使用规则引擎评估",
-        });
+      if (!analysis.diagnosis) {
+        // 有 progress.message 但没有 diagnosis → 暂无学生活动数据，非 AI 错误
+        if (analysis.progress?.message) {
+          store.setAnalysis(studentId, analysis);
+          toast.info(analysis.student_name || studentId, {
+            description: analysis.progress.message,
+          });
+        } else {
+          toast.error("AI 分析不可用", {
+            description: "请检查 LLM API Key 配置",
+          });
+        }
         return;
       }
 
-      if (analysis.suggested_action === "popup") {
+      store.setAnalysis(studentId, analysis);
+
+      if (analysis.suggested_action === "popup" || analysis.suggested_action === "notify" || analysis.priority === "critical") {
         toast.info(analysis.student_name, {
-          description: truncate(analysis.diagnosis),
-          action: { label: "查看", onClick: () => store.setSelectedStudentId(studentId) },
-        });
-      } else if (analysis.suggested_action === "notify" || analysis.priority === "critical") {
-        toast.warning(analysis.student_name, {
           description: truncate(analysis.diagnosis),
         });
       }

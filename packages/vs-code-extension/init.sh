@@ -20,7 +20,7 @@ EXT_DIR="$VSCODE_EXT_DIR/sqlense.sqlense-vscode"
 rm -rf "$EXT_DIR" "$VSCODE_EXT_DIR/extensions.json" "$VSCODE_EXT_DIR/.obsolete"
 mkdir -p "$EXT_DIR"
 cp -r /opt/extensions/sqlense-vscode/* "$EXT_DIR/"
-cd "$EXT_DIR" && npm install --omit=dev --production 2>/dev/null
+cd "$EXT_DIR" && npm install --omit=dev
 chown -R abc:abc "$EXT_DIR" 2>/dev/null || true
 
 # Install SQLTools extensions

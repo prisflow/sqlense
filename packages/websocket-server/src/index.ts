@@ -8,11 +8,11 @@ import { startFileNotifyServer } from "./fileNotify.js";
 const PORT = Number(process.env.PORT) || 3001;
 const API_PORT = Number(process.env.API_PORT) || 3100;
 
-/** 学生会话：跟踪连接状态、接管信息。 */
+/** 学生会话：跟踪连接状态、接管信息。一个学生可以有多个 socket（多标签页/接管 iframe）。 */
 interface StudentSession {
   studentId: string;
   studentName: string;
-  socketId: string;
+  sockets: Set<string>;
   takeoverActive: boolean;
   takeoverTeacherSocket: string | null;
 }
@@ -108,13 +108,15 @@ io.on("connection", (socket) => {
   if (role === "teacher") {
     socket.join("teachers");
 
-    // 推送当前在线学生列表
-    const currentOnline = Array.from(sessions.entries()).map(([id, s]) => ({
-      studentId: id,
-      studentName: s.studentName,
-      online: true,
-      takeoverActive: s.takeoverActive,
-    }));
+    // 推送当前在线学生列表（有 socket 的才算在线）
+    const currentOnline = Array.from(sessions.entries())
+      .filter(([_, s]) => s.sockets.size > 0)
+      .map(([id, s]) => ({
+        studentId: id,
+        studentName: s.studentName,
+        online: true,
+        takeoverActive: s.takeoverActive,
+      }));
     if (currentOnline.length > 0) socket.emit("teacher:student-list", currentOnline);
 
     // 教师发起接管学生
@@ -169,16 +171,17 @@ io.on("connection", (socket) => {
   if (role === "student" && studentId) {
     clearTimeout(offlineTimers.get(studentId));
     offlineTimers.delete(studentId);
-    const session: StudentSession = {
-      studentId,
-      studentName: studentName || studentId,
-      socketId: socket.id,
-      takeoverActive: false,
-      takeoverTeacherSocket: null,
-    };
-    sessions.set(studentId, session);
+    // 追加到该学生的 socket 集合（学生可能有多条连接）
+    let session = sessions.get(studentId);
+    const wasOnline = !!session;
+    if (!session) {
+      session = { studentId, studentName: studentName || studentId, sockets: new Set(), takeoverActive: false, takeoverTeacherSocket: null };
+      sessions.set(studentId, session);
+    }
+    session.sockets.add(socket.id);
     socket.join(`student:${studentId}`);
-    io.to("teachers").emit("teacher:student-online", { studentId, studentName: session.studentName });
+    // 首次上线才广播 online（后续 socket 不重复通知）
+    if (!wasOnline) io.to("teachers").emit("teacher:student-online", { studentId, studentName: session.studentName });
 
     // 接收学生遥测数据：idle 直接转发，其余进 tracker 缓冲
     socket.on("student:telemetry", (data: TelemetryData) => {
@@ -190,15 +193,20 @@ io.on("connection", (socket) => {
       tracker.record(studentId, data);
     });
 
-    // 学生断开 → 延迟 5s 标记离线，避免短暂断线重连闪烁
+    // 学生断开 → 只移出当前 socket，还有别的 socket 就不触发离线
     socket.on("disconnect", () => {
+      const s = sessions.get(studentId);
+      if (!s) return;
+      s.sockets.delete(socket.id);
+      if (s.sockets.size > 0) return;
+      // 所有 socket 都断了 → 从 sessions 移除并启动 5s 离线计时
       sessions.delete(studentId);
       clearTimeout(offlineTimers.get(studentId));
       offlineTimers.set(studentId, setTimeout(() => {
         offlineTimers.delete(studentId);
         if (sessions.has(studentId)) return;
-        if (session.takeoverActive && session.takeoverTeacherSocket) {
-          io.to(session.takeoverTeacherSocket).emit("takeover:state", { type: "disconnected" });
+        if (s.takeoverActive && s.takeoverTeacherSocket) {
+          io.to(s.takeoverTeacherSocket).emit("takeover:state", { type: "disconnected" });
         }
         io.to("teachers").emit("teacher:student-offline", { studentId });
       }, 5000));

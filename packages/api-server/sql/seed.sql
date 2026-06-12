@@ -8,12 +8,12 @@ INSERT INTO system.users (username, password_hash, role, display_name) VALUES
 ON CONFLICT (username) DO NOTHING;
 
 INSERT INTO system.classes (id, name, teacher_id) VALUES
-('00000000-0000-0000-0000-000000000001', '数据库实验一班', (SELECT id FROM system.users WHERE username='teacher'))
+('9d460af8-4352-46af-9673-ab959c51adbe', '数据库实验一班', (SELECT id FROM system.users WHERE username='teacher'))
 ON CONFLICT (id) DO UPDATE SET teacher_id = (SELECT id FROM system.users WHERE username='teacher');
 
 -- 学生数据库和角色名对应 code-server init.sh 中的 sqltools 连接配置
 INSERT INTO system.students (user_id, class_id, student_no, pg_db_name, pg_role_name, cs_port, cs_password, status) VALUES
-((SELECT id FROM system.users WHERE username='2024001'), '00000000-0000-0000-0000-000000000001', '2024001', 'db_student_2024001', 'role_student_2024001', 8443, 'stu2024001', 'active')
+((SELECT id FROM system.users WHERE username='2024001'), '9d460af8-4352-46af-9673-ab959c51adbe', '2024001', 'db_student_2024001', 'role_student_2024001', 8443, 'stu2024001', 'active')
 ON CONFLICT (student_no) DO NOTHING;
 
 -- 为预设学生创建 PostgreSQL 角色（CREATE ROLE 可以在函数中执行）

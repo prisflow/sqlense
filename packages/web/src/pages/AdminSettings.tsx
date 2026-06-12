@@ -70,7 +70,7 @@ export default function AdminSettings() {
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Base URL</label>
-              <Input value={baseUrl} onChange={e => setBaseUrl(e.target.value)} className="text-gray-900" placeholder="https://api.deepseek.com/v1" />
+              <Input value={baseUrl} onChange={e => setBaseUrl(e.target.value)} className="text-gray-900" placeholder="https://api.deepseek.com" />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Model</label>

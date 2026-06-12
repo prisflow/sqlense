@@ -1,3 +1,4 @@
+import time
 from pydantic_ai import Agent
 from pydantic_ai.usage import UsageLimits
 from agents.models import CodeAnalysis
@@ -53,6 +54,7 @@ async def analyze_code(
         for d in diagnostics:
             prompt += f"  第 {d.get('line')} 行: {d.get('message')}\n"
     prompt += "\n请分析这段代码哪里有问题。"
+    t0 = time.time()
     result = await get_code_agent().run(prompt, usage_limits=UsageLimits(request_limit=None))
-    print(f"[usage] Code agent: {result.usage.requests} requests")
+    print(f"[timing] Code agent: {time.time()-t0:.1f}s, {result.usage.requests} requests")
     return result.output

@@ -39,13 +39,6 @@ class Tracker {
       })
     );
 
-    this.disposables.push(
-      // 键盘输入时触发活动标记
-      vscode.commands.registerCommand("type", () => {
-        this._onActivity();
-      })
-    );
-
     this._startIdleMonitor();
     this._startCodeHistoryMonitor();
     this._startSqlToolsMonitor();

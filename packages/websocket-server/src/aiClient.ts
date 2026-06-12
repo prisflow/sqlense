@@ -34,7 +34,7 @@ export async function getStudentTaskGroup(studentId: string): Promise<string> {
 const dsnCache = new Map<string, string>();
 
 /** 查询学生 DSN，结果缓存 1 小时 */
-export async function getStudentDsn(studentId: string): Promise<string> {
+async function getStudentDsn(studentId: string): Promise<string> {
   const cached = dsnCache.get(studentId);
   if (cached) {
     console.log("[ws] getStudentDsn cache hit:", studentId);

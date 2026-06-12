@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
     curl \
     ca-certificates \
+    npm \
     && rm -rf /var/lib/apt/lists/*
 
 # 复制 SQLense 扩展源码（init.sh 中会 npm install 安装依赖）

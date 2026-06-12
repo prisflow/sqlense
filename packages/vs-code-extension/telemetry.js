@@ -74,7 +74,6 @@ class TelemetryClient {
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     if (this.socket) {
       this.socket.disconnect();
-      this.socket.close();
     }
   }
 }

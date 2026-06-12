@@ -1,4 +1,5 @@
 import asyncio
+import time
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from schemas.models import (
@@ -11,6 +12,15 @@ from schemas.models import (
     BatchStudent,
 )
 from config import load_llm_config, get_llm_config
+
+
+# 确保 LLM 配置可用，如果内存中没有则从 DB 重载
+async def _ensure_llm() -> bool:
+    cfg = get_llm_config()
+    if cfg.get("api_key"):
+        return True
+    cfg = await load_llm_config()
+    return bool(cfg.get("api_key"))
 from agents.models import CodeAnalysis, SQLAgentResult
 from agents.code_agent import analyze_code
 from agents.sql_agent import analyze_sql
@@ -64,9 +74,21 @@ async def analyze(req: AnalyzeRequest):
     无 LLM 时返回 503，强制部署者配置 LLM。
     有 LLM 时并发调用 Code Agent + SQL Agent → Judge 综合诊断。
     """
-    if not get_llm_config().get("api_key"):
+    t0 = time.time()
+    if not await _ensure_llm():
         raise HTTPException(status_code=503, detail="AI 未配置，请在 system.settings 中配置 LLM_API_KEY")
+    print(f"[timing] _ensure_llm: {time.time()-t0:.1f}s")
 
+    # 没有遥测数据时直接跳过分析
+    if not req.telemetry:
+        return AnalyzeResponse(
+            student_id=req.student_id,
+            student_name=req.student_name,
+            priority=PriorityLevel.LOW,
+            progress=ProgressMetrics(current_pct=0, message="暂无学生活动数据"),
+        )
+
+    t1 = time.time()
     # 按类型分类遥测条目
     code_text = ""
     code_history: list[dict] = []
@@ -92,7 +114,9 @@ async def analyze(req: AnalyzeRequest):
             attempts += 1
         if t.type == "idle":
             idle_seconds += p.get("duration", 0)
+    print(f"[timing] classify telemetry: {time.time()-t1:.1f}s")
 
+    t2 = time.time()
     # 并发调用 Code Agent + SQL Agent
     coros = []
     if code_text:
@@ -100,12 +124,14 @@ async def analyze(req: AnalyzeRequest):
     coros.append(analyze_sql(terminal_outputs, req.student_dsn or ""))
 
     results = await asyncio.gather(*coros)
+    print(f"[timing] Code+SQL agents: {time.time()-t2:.1f}s")
     idx = 0
     code_analysis = results[idx] if code_text else CodeAnalysis(has_errors=False, issues=[], missing_constraints=[])
     if code_text:
         idx += 1
     sql_analysis = results[idx]
 
+    t3 = time.time()
     # Judge 综合诊断
     agent_diagnosis = await diagnose(
         code=code_analysis or CodeAnalysis(has_errors=False, issues=[], missing_constraints=[]),
@@ -117,6 +143,8 @@ async def analyze(req: AnalyzeRequest):
         idle_seconds=idle_seconds,
         attempts=attempts,
     )
+    print(f"[timing] Judge: {time.time()-t3:.1f}s")
+    print(f"[timing] TOTAL: {time.time()-t0:.1f}s")
 
     # 组装响应
     return AnalyzeResponse(
@@ -142,7 +170,7 @@ async def batch_analyze(req: BatchRequest):
     LLM 判断哪些学生需要进一步分析。
     无 LLM 时返回 503。
     """
-    if not get_llm_config().get("api_key"):
+    if not await _ensure_llm():
         raise HTTPException(status_code=503, detail="AI 未配置，请在 system.settings 中配置 LLM_API_KEY")
 
     entries = [e.model_dump() for e in req.entries]

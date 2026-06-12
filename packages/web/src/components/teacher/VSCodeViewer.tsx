@@ -20,17 +20,10 @@ export default function VSCodeViewer({ studentId, studentName, open, onClose }: 
     fetched.current = studentId;
     setLoadError(false);
 
-    // Js的原生取消API
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-
-    fetch(`/api/dashboard/student-by-no/${studentId}`, { signal: controller.signal })
+    fetch(`/api/dashboard/student-by-no/${studentId}`, { signal: AbortSignal.timeout(5000) })
       .then((r) => { if (!r.ok) throw new Error("API error"); return r.json(); })
       .then((d) => { if (d.student) setIdeUrl(`//${window.location.hostname}:${d.student.cs_port}`); else throw new Error("no student"); })
-      .catch((e) => { console.error("Failed to get student IDE URL:", e); setLoadError(true); })
-      .finally(() => clearTimeout(timeout));
-
-    return () => { clearTimeout(timeout); controller.abort(); };
+      .catch((e) => { console.error("Failed to get student IDE URL:", e); setLoadError(true); });
   }, [studentId, open]);
 
   return (

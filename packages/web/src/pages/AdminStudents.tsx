@@ -20,7 +20,6 @@ export default function AdminStudents() {
   const [open, setOpen] = useState(false);
   const [csvText, setCsvText] = useState("");
   const [classId, setClassId] = useState("");
-  const [result, setResult] = useState("");
 
   // 加载学生和班级列表
   const load = () => {
@@ -45,14 +44,17 @@ export default function AdminStudents() {
     const lines = csvText.trim().split("\n").filter(Boolean);
     if (lines.length > 0 && lines[0].includes("student_no")) lines.shift();
     const data = lines.map(l => { const [a, b, c] = l.split(",").map(s => s.trim()); return { student_no: a, display_name: b, password: c, class_id: classId }; });
-    const res = await fetch("/api/admin/students/import", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ students: data }) });
-    const d = await res.json();
-    const ok = d.results.filter((r: any) => r.status === "ok").length;
-    const err = d.results.filter((r: any) => r.status === "error").length;
-    setCsvText("");
-    load();
-    if (err === 0) { setOpen(false); setResult(""); }
-    else { setResult(`成功 ${ok} 人，失败 ${err} 人`); }
+    try {
+      const res = await fetch("/api/admin/students/import", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ students: data }) });
+      const d = await res.json();
+      if (!res.ok) { toast.error(d.error || "导入失败"); return; }
+      setCsvText("");
+      load();
+      setOpen(false);
+      toast.success(`成功导入 ${d.count || data.length} 人`);
+    } catch (e) {
+      toast.error("导入失败");
+    }
   };
 
   // 删除学生及其容器和数据库
@@ -65,7 +67,7 @@ export default function AdminStudents() {
     <div className="p-8 max-w-6xl">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold text-gray-900">学生管理</h1>
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setResult(""); }}>
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setCsvText(""); }}>
           <DialogTrigger render={<Button size="sm">CSV 导入</Button>} />
           <DialogContent>
             <DialogTitle>CSV 导入学生</DialogTitle>
@@ -81,7 +83,6 @@ export default function AdminStudents() {
               </Select>
               <Textarea value={csvText} onChange={e => setCsvText(e.target.value)} placeholder={"student_no,display_name,password\n2024101,张三,pass101"} rows={6} className="text-gray-900" />
             </div>
-            {result && <p className="text-sm text-gray-800 mt-2 font-medium">{result}</p>}
             <div className="flex justify-end gap-2 mt-2">
               <Button variant="outline" onClick={() => setOpen(false)}>关闭</Button>
               <Button onClick={importCsv}>导入</Button>

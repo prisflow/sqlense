@@ -12,13 +12,13 @@ CACHE_TTL = 300
 
 
 class JudgeContext:
-    """Judge Agent 依赖上下文，持有系统 PG DSN。"""
+    """Judge Agent 依赖上下文，持有系统 PG DSN 和工具调用计数。"""
     def __init__(self, pg_dsn: str):
         self.pg_dsn = pg_dsn
+        self.task_context_calls = 0
 
 
 def get_judge_agent() -> Agent:
-    """懒初始化 Judge Agent 单例，注册 get_task_context 工具。"""
     global _judge_agent
     if _judge_agent is None:
         cfg = get_llm_config()
@@ -30,7 +30,7 @@ def get_judge_agent() -> Agent:
             system_prompt=(
                 "你是一个数据库实验教学系统的主判断智能体。"
                 "你会收到代码分析和 SQL 终端分析的结果，以及学生遥测数据。"
-                "你有 get_task_context 工具，可以查询学生当前任务分组下的文档内容。"
+                "你有 get_task_context 工具，可以查询教师上传的任务参考资料（不是学生上传的），用于判断学生的完成情况是否符合要求。"
                 "综合所有信息，判断学生当前的问题优先级和诊断建议。\n\n"
                 "输出字段说明：\n"
                 "- progress_pct: 学生任务进度百分比（0-100），根据代码完成度和数据库表结构判断\n"
@@ -42,15 +42,20 @@ def get_judge_agent() -> Agent:
                 "  - low: 代码基本正确、进度 80% 以上\n"
                 "- suggested_action: none（无需操作）| notify（通知教师）| popup（主动弹出面板）\n"
                 "- diagnosis: 问题诊断描述\n"
-                "- suggestion: 具体修改建议"
+                "- suggestion: 具体修改建议\n"
+                "注意：get_task_context 工具最多调用 1 次，不要重复调用。"
             ),
             deps_type=JudgeContext,
             output_type=AgentDiagnosis,
         )
+    
 
         @agent.tool
         async def get_task_context(ctx: RunContext[JudgeContext], student_id: str, task_group: str = "") -> str:
-            """查询学生当前任务分组下的文档内容，用于和学生的完成情况进行对比。"""
+            """查询教师上传的参考资料（任务文档），用于判断学生的完成情况是否符合要求。最多调用 1 次。"""
+            if ctx.deps.task_context_calls >= 1:
+                return "你已经调用过 get_task_context，结果已在对话中。请基于已有信息直接进行诊断，不要重复调用。"
+            ctx.deps.task_context_calls += 1
             cache_key = f"{student_id}:{task_group}"
             cached = _task_context_cache.get(cache_key)
             if cached and time.time() - cached[1] < CACHE_TTL:
@@ -86,6 +91,7 @@ def get_judge_agent() -> Agent:
                                 result_parts.append(f"```\n{content[:3000]}\n```\n")
 
                 result = "\n".join(result_parts) or "未找到任务文档"
+                print(f"[task_context] files_found={len(files) if files else 0}, preview={result[:20]}")
                 _task_context_cache[cache_key] = (result, time.time())
                 return result
             finally:
@@ -133,14 +139,6 @@ async def diagnose(
     idle_seconds: float,
     attempts: int,
 ) -> AgentDiagnosis:
-    """执行综合诊断。
-
-    将 Code Agent + SQL Agent 的分析结果与遥测数据汇总，
-    调用 Judge Agent 生成最终诊断。
-
-    Args:
-        task_group: 当前任务分组名称，用于 Judge 获取上下文。
-    """
     prompt = f"""
 ## 学生
 学生ID: {student_id}
@@ -163,8 +161,13 @@ async def diagnose(
 - 空闲秒数: {idle_seconds:.0f}
 - 尝试次数: {attempts}
 
-你可以调用 get_task_context 工具查询任务文档来对比学生完成情况。
+    你可以调用 get_task_context 工具查询教师上传的任务参考资料（最多调用 1 次，不要重复调用）。
 """
-    result = await get_judge_agent().run(prompt, deps=JudgeContext(pg_dsn=PG_DSN), usage_limits=UsageLimits(request_limit=None))
-    print(f"[usage] Judge: {result.usage.requests} requests")
-    return result.output
+    try:
+        t0 = time.time()
+        result = await get_judge_agent().run(prompt, deps=JudgeContext(pg_dsn=PG_DSN), usage_limits=UsageLimits(request_limit=None, tool_calls_limit=1))
+        print(f"[timing] Judge: {time.time()-t0:.1f}s, {result.usage.requests} requests")
+        return result.output
+    except Exception as e:
+        print(f"[timing] Judge failed after {time.time()-t0:.1f}s: {e}")
+        return AgentDiagnosis(priority="medium", diagnosis=f"分析中断", suggestion="", progress_pct=0, progress_message="分析异常")
