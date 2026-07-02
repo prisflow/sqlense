@@ -148,6 +148,7 @@ studentsRouter.post("/students/import", async (req, res) => {
         -e PG_USER=${r.pg_role_name} \
         -e PG_PASSWORD=${r.cs_password} \
         -e WS_SERVER=ws://websocket:3001 \
+        -e CODE_SERVER_RECONNECTION_GRACE_TIME=0 \
         -e PG_HOST=postgres \
         ${image}`, { stdio: "pipe", timeout: 30000 });
     } catch (e: unknown) {

@@ -10,13 +10,13 @@ function truncate(text: string, max = 80): string {
 }
 
 // 管理 WebSocket 连接，接收实时遥测和 AI 分析
-export function useWebSocket() {
+export function useWebSocket(teacherId?: string) {
   const socketRef = useRef<Socket | null>(null);
   const store = useStore();
 
   useEffect(() => {
     const socket = io({
-      query: { role: "teacher" },
+      query: { role: "teacher", teacherId: teacherId ?? "" },
       transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionDelay: 2000,
@@ -82,10 +82,17 @@ export function useWebSocket() {
       store.mergeStudent({ studentId, takeoverActive });
     });
 
+    socket.on("takeover:state", ({ type }: { type: string }) => {
+      if (type === "disconnected") {
+        toast.error("学生已断开连接");
+        store.setSelectedStudentId(null);
+      }
+    });
+
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [teacherId]);
 
   // 请求 AI 分析指定学生的代码（可指定任务分组）
   const requestAnalysis = (studentId: string, taskGroup?: string) => {

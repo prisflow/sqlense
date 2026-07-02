@@ -11,8 +11,10 @@ name: sqlense
 x-student-base: &student-base
   build:
     context: ./packages/vs-code-extension
+  mem_limit: 256m
   environment:
     SUDO_PASSWORD: "sqlense"
+    CODE_SERVER_RECONNECTION_GRACE_TIME: "0"
     WS_SERVER: ws://websocket:3001
     SQLENSE_WS_SERVER: ws://websocket:3001
     PG_HOST: postgres
@@ -27,6 +29,7 @@ services:
   # ─── 1. PostgreSQL — 系统数据库 ────────────────────────────
   postgres:
     image: postgres:16-alpine
+    mem_limit: 256m
     ports:
       - "5432:5432"
     environment:
@@ -49,6 +52,7 @@ services:
     build:
       context: ./packages/api-server
       dockerfile: Dockerfile
+    mem_limit: 256m
     ports:
       - "4000:4000"
     environment:
@@ -76,11 +80,11 @@ services:
     build:
       context: ./packages/websocket-server
       dockerfile: Dockerfile
+    mem_limit: 64m
     ports:
       - "3001:3001"
     environment:
       PORT: 3001
-      API_PORT: 3100                                    # 内部转发 AI 分析请求的端口
       AI_GATEWAY_URL: http://ai-gateway:8000            # AI 网关地址
       PG_HOST: postgres
       PG_PORT: 5432
@@ -96,6 +100,7 @@ services:
   ai-gateway:
     build:
       context: ./packages/ai-gateway
+    mem_limit: 256m
     ports:
       - "8000:8000"
     environment:
@@ -117,8 +122,11 @@ services:
     build:
       context: ./packages/auth-proxy
       dockerfile: Dockerfile
+    mem_limit: 16m
     ports:
       - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - api-server
 
@@ -128,6 +136,7 @@ services:
     build:
       context: ./packages/web
       dockerfile: Dockerfile
+    mem_limit: 32m
     ports:
       - "3000:80"                      # 宿主机 3000 → 容器内 nginx 80
     depends_on:
@@ -143,6 +152,8 @@ services:
     image: sqlense-student:latest       # 构建后打标签，供 api-server 动态创建新容器时引用
     ports: ["8443:8443"]
     environment:
+      CS_PORT: "8443"
+      CODE_SERVER_RECONNECTION_GRACE_TIME: "0"
       STUDENT_NO: "2024001"
       STUDENT_NAME: "张三"
       PG_DATABASE: "db_student_2024001"

@@ -25,7 +25,7 @@ export default function TeacherDashboard() {
   const mergeStudent = useStore((s) => s.mergeStudent);
 
   // ========== WebSocket 操作 ==========
-  const { requestAnalysis, startTakeover, stopTakeover } = useWebSocket();
+  const { requestAnalysis, startTakeover, stopTakeover } = useWebSocket(authUser?.userId);
 
   // ========== UI 状态 ==========
   const [loading, setLoading] = useState(true);

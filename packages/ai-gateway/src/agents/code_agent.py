@@ -13,7 +13,7 @@ def get_code_agent() -> Agent:
     global _code_agent
     if _code_agent is None:
         cfg = get_llm_config()
-        model = f"openai:{cfg.get('model') or 'deepseek-chat'}"
+        model = f"openai-chat:{cfg.get('model') or 'deepseek-chat'}"
         _code_agent = Agent(
             model,
             retries=3,

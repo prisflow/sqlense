@@ -13,23 +13,36 @@ server {
         proxy_set_header Cookie $http_cookie;
     }
 
-    # 捕获组1：学号数字 捕获组2：可选路径后缀
+    # 捕获组1：端口号 捕获组2：路径后缀
     location ~ ^/student-(\d+)(/.*)?$ {
         set $student_port $1;
         set $suffix $2;
+        set $base_href "/student-$student_port/";
 
         # 内部请求只看状态码
         auth_request /internal-auth;
 
-        # 把URL中的学号部分去掉（rewrite <regex> <replacement> <flag>）
-        rewrite ^ /$suffix break;
-        proxy_pass http://host.docker.internal:$student_port;
+        # 去掉前缀再传给 code-server（$suffix 已含 /）
+        rewrite ^ $suffix break;
+        # ${HOST_GW} 在启动时由 entrypoint 从 /etc/hosts 动态注入
+        proxy_pass http://${HOST_GW}:$student_port;
+        # 把 code-server 的 302 重定向 ./../ 改回带前缀的路径
+        proxy_redirect ./../ https://$host/student-$student_port/;
+
         # 支持WS
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
         # 透传原始host
         proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # 在返回的 HTML 中注入 <base href>，让子路径资源正确解析
+        sub_filter '<head>' '<head><base href="$base_href">';
+        sub_filter_once off;
+        sub_filter_types text/html;
     }
 
     location /health {

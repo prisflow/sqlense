@@ -14,13 +14,10 @@ from schemas.models import (
 from config import load_llm_config, get_llm_config
 
 
-# 确保 LLM 配置可用，如果内存中没有则从 DB 重载
+# 每次调用都从 DB 重载 LLM 配置，确保改了 system.settings 后即时生效
 async def _ensure_llm() -> bool:
-    cfg = get_llm_config()
-    if cfg.get("api_key"):
-        return True
-    cfg = await load_llm_config()
-    return bool(cfg.get("api_key"))
+    await load_llm_config()
+    return bool(get_llm_config().get("api_key"))
 from agents.models import CodeAnalysis, SQLAgentResult
 from agents.code_agent import analyze_code
 from agents.sql_agent import analyze_sql

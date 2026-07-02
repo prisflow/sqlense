@@ -4,8 +4,9 @@ echo "[init] 开始初始化学生容器..."
 mkdir -p /config/.config/code-server
 
 echo "[init] 生成 VS Code 配置..."
+CS_PORT="${CS_PORT:-8443}"
 cat > /config/.config/code-server/config.yaml <<YAML
-bind-addr: 0.0.0.0:8443
+bind-addr: 0.0.0.0:${CS_PORT}
 auth: none
 cert: false
 YAML

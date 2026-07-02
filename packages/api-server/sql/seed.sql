@@ -2,7 +2,7 @@
 -- 默认账号: admin/admin, teacher/teacher, 2024001/stu2024001
 
 INSERT INTO system.users (username, password_hash, role, display_name) VALUES
-('admin', '$2a$10$BObCQaEAMdO24TSPzg2koeDBSQnUHGIz.VduLFfVPKKTOpbN3JA8W', 'admin', '管理员'),
+('admin', '$2b$10$DhEH35IhrDSWWpRkA/RZFe3VNRVJ3UOBWDbku0IKgVZPeLlwLkWY2', 'admin', '管理员'),
 ('teacher', '$2a$10$wr8Q7j3RQFJ6g7PxPDHHDeIaBWcsx.WMKr4SjLXE09wg4B5OGraA2', 'teacher', '教师'),
 ('2024001', '$2a$10$pq81SwjQTFB2lcyfAVjGqO0E4ze5XCdmVBBfVyXXbgBLctyyewHAW', 'student', '张三')
 ON CONFLICT (username) DO NOTHING;
