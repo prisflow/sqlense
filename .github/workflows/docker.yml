@@ -13,7 +13,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: set
-        run: echo "services=$(ls -d packages/*/Dockerfile | sed 's|packages/||;s|/Dockerfile||' | jq -R -s -c 'split(\"\n\")[:-1]')" >> "$GITHUB_OUTPUT"
+        run: |
+          arr=()
+          for f in packages/*/Dockerfile; do
+            name=$(basename "$(dirname "$f")")
+            arr+=("$name")
+          done
+          json="["
+          sep=""
+          for s in "${arr[@]}"; do
+            json+="${sep}\"${s}\""
+            sep=","
+          done
+          json+="]"
+          echo "services=$json" >> "$GITHUB_OUTPUT"
 
   build:
     needs: detect
