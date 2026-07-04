@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { execSync } from "node:child_process";
 import { pool } from "../../models/db.js";
 import { audit, execSQL } from "../common.js";
 
@@ -27,7 +26,7 @@ studentsRouter.get("/students", async (req, res) => {
   res.json({ students: result.rows });
 });
 
-// 更新学生状态（启用/禁用容器）
+// 更新学生状态（启用/禁用）
 studentsRouter.put("/students/:id/status", async (req, res) => {
   const schema = z.object({ status: z.enum(["active", "inactive", "disabled"]) });
   const parsed = schema.safeParse(req.body);
@@ -35,17 +34,12 @@ studentsRouter.put("/students/:id/status", async (req, res) => {
   const r = await pool.query("SELECT student_no, status FROM system.students WHERE id = $1", [req.params.id]);
   if (r.rows.length === 0) return res.status(404).json({ error: "学生不存在" });
   await pool.query("UPDATE system.students SET status = $1 WHERE id = $2", [parsed.data.status, req.params.id]);
-  const containerName = `sqlense-student-${r.rows[0].student_no}`;
-  if (parsed.data.status === "disabled") {
-    try { execSync(`docker stop ${containerName} 2>/dev/null`, { stdio: "ignore", timeout: 10000 }); } catch { /* ok */ }
-  } else if (parsed.data.status === "active") {
-    try { execSync(`docker start ${containerName} 2>/dev/null`, { stdio: "ignore", timeout: 10000 }); } catch (e) { console.error(`Failed to start container ${containerName}:`, e); }
-  }
+  // 单容器模式：不再管理 per-student 容器，状态仅反映数据库记录
   audit(req.user as any, parsed.data.status === "disabled" ? "disable_student" : "enable_student", { studentId: req.params.id });
   res.json({ message: "状态已更新" });
 });
 
-// 删除学生账号及数据库和容器
+// 删除学生账号及数据库（单容器模式：不再删除容器）
 studentsRouter.delete("/students/:id", async (req, res) => {
   const result = await pool.query("SELECT s.student_no, s.pg_db_name, s.pg_role_name, s.user_id, u.username FROM system.students s JOIN system.users u ON u.id = s.user_id WHERE s.id = $1", [req.params.id]);
   if (result.rows.length === 0) return res.status(404).json({ error: "学生不存在" });
@@ -56,8 +50,6 @@ studentsRouter.delete("/students/:id", async (req, res) => {
 
   try { await execSQL(`DROP DATABASE IF EXISTS "${pg_db_name}"`); } catch { /* ok */ }
   try { await execSQL(`DROP ROLE IF EXISTS "${pg_role_name}"`); } catch { /* ok */ }
-
-  try { execSync(`docker rm -f sqlense-student-${student_no} 2>/dev/null`, { stdio: "ignore", timeout: 10000 }); } catch { /* ok */ }
 
   audit(req.user as any, "delete_student", { student_no });
   res.json({ message: "已删除" });
@@ -87,11 +79,7 @@ studentsRouter.post("/students/import", async (req, res) => {
 
   // 全量原子导入：任何一步失败则全部回滚
   const client = await pool.connect();
-  let portOffset = 0;
   try {
-    const base = await pool.query("SELECT COUNT(*) FROM system.students");
-    portOffset = Number(base.rows[0].count);
-
     await client.query("BEGIN");
 
     for (const s of parsed.data.students) {
@@ -104,8 +92,7 @@ studentsRouter.post("/students/import", async (req, res) => {
 
       const dbName = `db_student_${s.student_no}`;
       const roleName = `role_student_${s.student_no}`;
-      portOffset++;
-      const port = 8443 + portOffset;
+      const port = 8080;
       const escapedPw = s.password.replace(/'/g, "''");
 
       await execSQL(`CREATE ROLE "${roleName}" WITH LOGIN PASSWORD '${escapedPw}'`);
@@ -128,54 +115,22 @@ studentsRouter.post("/students/import", async (req, res) => {
     client.release();
   }
 
-  // 创建容器（资源已提交，容器失败只记日志）
-  const image = process.env.STUDENT_IMAGE || "sqlense-student:latest";
-  const containerErrors: string[] = [];
-  for (const s of parsed.data.students) {
-    try {
-      const record = await pool.query("SELECT cs_port, cs_password, pg_db_name, pg_role_name FROM system.students WHERE student_no = $1", [s.student_no]);
-      if (record.rows.length === 0) continue;
-      const r = record.rows[0];
-      const name = `sqlense-student-${s.student_no}`;
-      execSync(`docker rm -f ${name} 2>/dev/null; docker run -d \
-        --name ${name} \
-        --network ${process.env.DOCKER_NETWORK || "sqlense_default"} \
-        --label com.docker.compose.project=${process.env.COMPOSE_PROJECT_NAME || "sqlense"} \
-        -p ${r.cs_port}:8443 \
-        -e STUDENT_NO=${s.student_no} \
-        -e STUDENT_NAME=${s.display_name} \
-        -e PG_DATABASE=${r.pg_db_name} \
-        -e PG_USER=${r.pg_role_name} \
-        -e PG_PASSWORD=${r.cs_password} \
-        -e WS_SERVER=ws://websocket:3001 \
-        -e PG_HOST=postgres \
-        ${image}`, { stdio: "pipe", timeout: 30000 });
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error(`Failed to start container for ${s.student_no}: ${msg}`);
-      containerErrors.push(`${s.student_no}: ${msg}`);
-    }
-  }
-
+  // 单容器模式：不再创建 per-student 容器，code-server 按学号懒分配工作区
   audit(req.user as any, "import_students", { count: parsed.data.students.length });
   res.json({
     message: "导入成功",
     count: parsed.data.students.length,
-    ...(containerErrors.length > 0 ? { container_errors: containerErrors } : {}),
   });
 });
 
-// 检查所有学生容器运行状态
+// 检查所有学生状态（单容器模式：code-server 由 docker-compose 管理，全都在线）
 studentsRouter.get("/containers/status", async (_req, res) => {
   const result = await pool.query("SELECT student_no, cs_port, status FROM system.students ORDER BY student_no");
-  const students = [];
-  for (const s of result.rows) {
-    let online = false;
-    try {
-      const out = execSync(`docker inspect --format='{{.State.Status}}' sqlense-student-${s.student_no} 2>/dev/null || true`, { encoding: "utf-8", timeout: 5000 });
-      online = out.trim() === "running";
-    } catch { /* not running */ }
-    students.push({ student_no: s.student_no, cs_port: s.cs_port, db_status: s.status, container_online: online });
-  }
+  const students = result.rows.map((s: any) => ({
+    student_no: s.student_no,
+    cs_port: s.cs_port,
+    db_status: s.status,
+    container_online: true,  // 单容器模式，code-server 始终在线
+  }));
   res.json({ students });
 });

@@ -60,8 +60,6 @@ docker compose logs -f web
 | Username | Password | Role |
 |----------|----------|------|
 | admin | admin | admin |
-| teacher | teacher | teacher |
-| 2024001 | stu2024001 | student |
 
 ## Database
 - System tables: `system.users`, `system.classes`, `system.students`, `system.task_files`, `system.settings`, `system.audit_logs`

@@ -30,7 +30,6 @@ const dayItems = [
 ];
 
 // 操作日志查询页面，按类型和时间筛选
-// 操作日志查询页面，按类型和时间筛选
 export default function AdminLogs() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);

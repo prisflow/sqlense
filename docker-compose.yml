@@ -1,27 +1,10 @@
 # ============================================================
 # SQLense — 数据库实验教学平台
 # 7 个容器：postgres / api-server / websocket / ai-gateway /
-#            auth-proxy / web / student-1
+#            auth-proxy / web / code-server
 # ============================================================
 
 name: sqlense
-
-# ── 学生容器基础模板 ──
-# 所有 student-N 服务共享的配置（端口/环境/依赖除外）
-x-student-base: &student-base
-  build:
-    context: ./packages/vs-code-extension
-  environment:
-    SUDO_PASSWORD: "sqlense"
-    WS_SERVER: ws://websocket:3001
-    SQLENSE_WS_SERVER: ws://websocket:3001
-    PG_HOST: postgres
-    PG_USER: sqlense
-    PG_PASSWORD: sqlense
-    PG_DATABASE: sqldb
-  depends_on:
-    postgres:
-      condition: service_healthy
 
 services:
   # ─── 1. PostgreSQL — 系统数据库 ────────────────────────────
@@ -53,18 +36,15 @@ services:
       - "4000:4000"
     environment:
       API_PORT: 4000
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}         # 启动时更新 admin 密码，留空或 admin 则不更新
       JWT_SECRET: ${JWT_SECRET:-sqlense-dev-secret}   # JWT 签名密钥，生产环境务必修改
       PG_HOST: postgres
       PG_PORT: 5432
       PG_USER: sqlense
       PG_PASSWORD: sqlense
       PG_DATABASE: sqlense
-      COMPOSE_PROJECT_NAME: sqlense                    # Docker Compose 项目名，用于容器命名
-      STUDENT_IMAGE: sqlense-student:latest            # 导入时拉取的学生容器镜像
       FILE_DIR: /srv/files                             # 教师共享文件的存储目录
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro   # 挂载 Docker socket，用于管理学生容器
-      - ./docker-compose.yml:/app/docker-compose.yml:ro # 供 api-server 读取 compose 配置
       - files:/srv/files
     depends_on:
       postgres:
@@ -80,7 +60,6 @@ services:
       - "3001:3001"
     environment:
       PORT: 3001
-      API_PORT: 3100                                    # 内部转发 AI 分析请求的端口
       AI_GATEWAY_URL: http://ai-gateway:8000            # AI 网关地址
       PG_HOST: postgres
       PG_PORT: 5432
@@ -135,22 +114,28 @@ services:
       - websocket
       - ai-gateway
 
-  # ─── 7. 学生容器（示例：2024001 张三） ─────────────────────
-  # 继承 student-base 模板，生产环境通过导入 API 动态创建。
-  # 端口：8443 固定给 student-1，后续容器从 8444 开始递增。
-  student-1:
-    <<: *student-base
-    image: sqlense-student:latest       # 构建后打标签，供 api-server 动态创建新容器时引用
+  # ─── 7. code-server（单容器，X-Student-Id 路由） ────────────
+  # 所有学生共享一个 VS Code Server，通过 X-Student-Id header 区分工作区。
+  # 扩展首次启动时安装到 shared-ext volume。学生 settings.json 由
+  # ensureStudentWorkspace() 懒加载创建（调用 API /workspace-env）。
+  code-server:
+    image: sqlense-code-server:latest
     ports: ["8443:8443"]
     environment:
-      STUDENT_NO: "2024001"
-      STUDENT_NAME: "张三"
-      PG_DATABASE: "db_student_2024001"
-      PG_USER: "role_student_2024001"
-      PG_PASSWORD: "stu2024001"
-    volumes: ["student1-data:/config"]   # code-server 配置目录持久化
+      API_SERVER_URL: http://api-server:4000
+      WS_SERVER: ws://websocket:3001
+      SQLENSE_WS_SERVER: ws://websocket:3001
+      CODE_SERVER_RECONNECTION_GRACE_TIME: "0"
+      PG_HOST: postgres
+    volumes:
+      - shared-ext:/workspaces/.shared-extensions
+      - ./packages/vs-code-extension:/opt/extensions/sqlense-vscode:ro
+      - ./packages/code-server/startup.sh:/startup.sh:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   pgdata:          # PostgreSQL 数据持久化（Docker 自动创建 named volume）
-  student1-data:   # student-1 的 code-server 配置目录（Docker 自动创建）
   files:           # 教师共享文件存储（Docker 自动创建）
+  shared-ext:      # code-server 共享扩展存储（Docker 自动创建）

@@ -247,12 +247,12 @@ async def test_batch_filter():
         })
         await asyncio.sleep(0.1)
 
-    # student_b 发 60 条 idle
+    # student_b 发 60 条正常 terminal（idle 会跳过 tracker，无法累积）
     for i in range(60):
         student_b.emit("student:telemetry", {
-            "type": "idle",
+            "type": "terminal",
             "timestamp": time.time(),
-            "payload": {"duration": 200},
+            "payload": {"output": "SELECT 1;"},
         })
         await asyncio.sleep(0.1)
 

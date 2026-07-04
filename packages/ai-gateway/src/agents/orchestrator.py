@@ -22,7 +22,7 @@ def get_judge_agent() -> Agent:
     global _judge_agent
     if _judge_agent is None:
         cfg = get_llm_config()
-        model = f"openai:{cfg.get('model') or 'deepseek-chat'}"
+        model = f"openai-chat:{cfg.get('model') or 'deepseek-chat'}"
 
         agent = Agent(
             model,

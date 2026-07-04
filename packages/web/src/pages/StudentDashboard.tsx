@@ -22,7 +22,7 @@ export default function StudentDashboard() {
       .catch((e) => console.error("Failed to load student data:", e));
   }, []);
 
-  const ideUrl = data ? `//localhost:${data.cs_port}` : "";
+  const ideUrl = data ? `//${window.location.hostname}:8080/student-${data.student_no}/` : "";
 
   if (!data) return (
     <div className="h-screen flex flex-col bg-white">

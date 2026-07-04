@@ -5,7 +5,7 @@
 ## 身份
 
 ```
-教师:   io(url, { query: { role: "teacher" } })
+教师:   io(url, { query: { role: "teacher", teacherId } })  # teacherId = 教师用户 UUID，用于班级过滤
 学生:   io(url, { query: { role: "student", studentId, studentName } })
 ```
 
@@ -51,12 +51,14 @@ graph TB
 
 | 事件 | 触发 | 数据 |
 |------|------|------|
+| `teacher:student-list` | 教师连接后全量推送在线学生 | `Partial<StudentInfo>[]` |
 | `teacher:student-online` | 学生 WebSocket 连接 | `{ studentId, studentName }` |
 | `teacher:student-offline` | 学生断线后 5 秒 | `{ studentId }` |
 | `teacher:telemetry` | 转发学生遥测 | `{ studentId, data }` |
 | `teacher:status-update` | 接管状态变化 | `{ studentId, takeoverActive }` |
 | `teacher:ai-analysis` | AI 分析完成（手动/自动） | `{ studentId, analysis }` |
-| `teacher:error` | 操作失败 | `{ message }` |
+| `teacher:error` | 操作失败 | `{ studentId?, message }` |
+| `takeover:state` | 学生断开导致接管中断 | `{ type: "disconnected" }` |
 
 ## 教师 → 服务器
 
@@ -64,7 +66,7 @@ graph TB
 |------|------|
 | `teacher:takeover` | 请求接管学生 `{ studentId }` |
 | `teacher:takeover-release` | 释放接管 `{ studentId }` |
-| `teacher:ai-query` | 手动触发 AI 分析 `{ studentId }` |
+| `teacher:ai-query` | 手动触发 AI 分析 `{ studentId, taskGroup? }` |
 
 ## TelemetryTracker 调度
 

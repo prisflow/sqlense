@@ -14,10 +14,10 @@ docker compose up -d --build
 |------|------|------|
 | 前端 | http://localhost:3000 | React SPA |
 | API | http://localhost:4000/api/health | REST |
-| Auth Proxy | http://localhost:8080 | code-server 认证代理 |
-| Student IDE | http://localhost:8443 | 学生 code-server |
+| Auth Proxy | http://localhost:8080 | code-server 认证代理（按学号路由） |
+| Student IDE | http://localhost:8443 | 学生 code-server（单容器共享） |
 
-默认账号: `admin` / `admin`
+默认账号: `admin` / `admin`（教师和学生在管理页面手工创建）
 
 ## 架构
 
@@ -29,7 +29,7 @@ docker compose up -d --build
 ├── ai-gateway         — Python FastAPI, 多 Agent 智能分析
 ├── auth-proxy         — Nginx auth_request, code-server 认证网关
 ├── web               — Nginx + React SPA, 教师监控面板
-└── student-N          — code-server, 每人独立 IDE 容器
+└── code-server        — code-server, 单容器按学号隔离工作区
 ```
 
 ```mermaid
@@ -46,8 +46,8 @@ graph TB
 
 ### 学生隔离
 - 每位学生拥有独立的 PostgreSQL 数据库 (`db_student_N`) 和数据库角色 (`role_student_N`)
-- 独立的 code-server 容器，内置 SQLTools + psql
-- 通过 auth-proxy 统一认证入口
+- 单容器 code-server（通过 X-Student-Id header 隔离工作区），内置 SQLTools + psql
+- 通过 auth-proxy 统一认证入口（auth_request 鉴权后按学号路由到 code-server）
 
 ### 实时监控
 - 基于 VS Code Extension 的 Telemetry Tracker

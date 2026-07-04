@@ -36,7 +36,7 @@ curl -b /tmp/cookie -X POST http://localhost:4000/api/admin/students/import \
   -d '{"students":[{"student_no":"2024101","display_name":"张三","password":"pass101","class_id":"<班级UUID>"}]}'
 ```
 
-导入自动创建 PG 数据库、角色和 code-server 容器。
+导入自动创建 PG 数据库和角色（单容器模式不再创建 code-server 容器）。
 
 ## 管理员 API
 
@@ -55,5 +55,3 @@ curl -b /tmp/cookie http://localhost:4000/api/admin/dashboard
 | 用户名 | 密码 | 角色 |
 |--------|------|------|
 | `admin` | `admin` | admin |
-| `teacher` | `teacher` | teacher |
-| `2024001` | `stu2024001` | student |

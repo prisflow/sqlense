@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import bcrypt from "bcryptjs";
 import { authRouter } from "./routes/auth.js";
 import { adminRouter } from "./routes/admin/index.js";
 import { studentsRouter } from "./routes/students.js";
@@ -45,10 +46,25 @@ async function waitForDb(): Promise<void> {
   throw new Error("Database not available after 60s");
 }
 
+async function initAdminPassword(): Promise<void> {
+  const password = process.env.ADMIN_PASSWORD;
+  if (!password || password === "admin") {
+    return;
+  }
+  try {
+    const hash = await bcrypt.hash(password, 10);
+    await pool.query("UPDATE system.users SET password_hash = $1 WHERE username = 'admin'", [hash]);
+    console.log("[init] Admin password updated from ADMIN_PASSWORD env var");
+  } catch (e) {
+    console.error("[init] Failed to update admin password:", e);
+  }
+}
+
 // 启动服务器，等待数据库就绪后开始服务
 app.listen(PORT, async () => {
   console.log(`SQLense API server running on port ${PORT}`);
   await waitForDb();
+  await initAdminPassword();
 
   // 每小时清理过期日志
   setInterval(async () => {

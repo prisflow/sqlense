@@ -12,7 +12,7 @@ def get_batch_agent() -> Agent:
     global _batch_agent
     if _batch_agent is None:
         cfg = get_llm_config()
-        model = f"openai:{cfg.get('model') or 'deepseek-chat'}"
+        model = f"openai-chat:{cfg.get('model') or 'deepseek-chat'}"
         _batch_agent = Agent(
             model,
             retries=3,

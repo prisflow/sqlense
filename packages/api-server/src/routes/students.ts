@@ -4,6 +4,19 @@ import { pool } from "../models/db.js";
 import { authenticate, requireRole } from "../middleware/auth.js";
 
 export const studentsRouter = Router();
+
+// 内部端点：供 code-server 按学号获取工作区配置（内网调用，无需外部认证）
+studentsRouter.get("/:studentNo/workspace-env", async (req, res) => {
+  const result = await pool.query(`
+    SELECT u.display_name, s.student_no, s.pg_db_name, s.pg_role_name, s.cs_password
+    FROM system.students s
+    JOIN system.users u ON u.id = s.user_id
+    WHERE s.student_no = $1 AND s.status = 'active'
+  `, [req.params.studentNo]);
+  if (result.rows.length === 0) return res.status(404).json({ error: "未找到学生" });
+  res.json({ student: result.rows[0] });
+});
+
 studentsRouter.use(authenticate);
 
 // 按用户 ID 查询学生信息

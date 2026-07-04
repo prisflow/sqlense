@@ -22,7 +22,7 @@ export default function VSCodeViewer({ studentId, studentName, open, onClose }: 
 
     fetch(`/api/dashboard/student-by-no/${studentId}`, { signal: AbortSignal.timeout(5000) })
       .then((r) => { if (!r.ok) throw new Error("API error"); return r.json(); })
-      .then((d) => { if (d.student) setIdeUrl(`//${window.location.hostname}:${d.student.cs_port}`); else throw new Error("no student"); })
+      .then((d) => { if (d.student) setIdeUrl(`//${window.location.hostname}:8080/student-${d.student.student_no}/`); else throw new Error("no student"); })
       .catch((e) => { console.error("Failed to get student IDE URL:", e); setLoadError(true); });
   }, [studentId, open]);
 

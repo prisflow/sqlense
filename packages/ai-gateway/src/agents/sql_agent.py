@@ -77,7 +77,7 @@ def get_sql_agent() -> Agent:
     if _sql_agent is None:
         cfg = get_llm_config()
         """Agent构造函数要求模型名带provider前缀"""
-        model = f"openai:{cfg.get('model') or 'deepseek-chat'}"
+        model = f"openai-chat:{cfg.get('model') or 'deepseek-chat'}"
 
         agent = Agent(
             model,

@@ -3,16 +3,16 @@ import { Server } from "socket.io";
 import { TelemetryTracker } from "./telemetryTracker.js";
 import type { TelemetryData, FlushEvent } from "./telemetryTracker.js";
 import { AI_GATEWAY_URL, analyzeStudent, getStudentTaskGroup } from "./aiClient.js";
-import { startFileNotifyServer } from "./fileNotify.js";
+import { pool } from "./db.js";
 
 const PORT = Number(process.env.PORT) || 3001;
-const API_PORT = Number(process.env.API_PORT) || 3100;
 
 /** 学生会话：跟踪连接状态、接管信息。一个学生可以有多个 socket（多标签页/接管 iframe）。 */
 interface StudentSession {
   studentId: string;
   studentName: string;
   sockets: Set<string>;
+  classId: string | null;
   takeoverActive: boolean;
   takeoverTeacherSocket: string | null;
 }
@@ -51,7 +51,8 @@ const tracker = new TelemetryTracker(
         taskGroup
       );
       if (analysis) {
-        io.to("teachers").emit("teacher:ai-analysis", { studentId: event.studentId, analysis });
+        const target = session?.classId ? `class:${session.classId}` : "teachers";
+        io.to(target).emit("teacher:ai-analysis", { studentId: event.studentId, analysis });
       } else {
         console.warn("[ws] Tracker flush analysis returned null:", event.studentId);
       }
@@ -82,7 +83,8 @@ const tracker = new TelemetryTracker(
                 taskGroup
               );
               if (analysis) {
-                io.to("teachers").emit("teacher:ai-analysis", { studentId: s.student_id, analysis });
+                const target = session?.classId ? `class:${session.classId}` : "teachers";
+                io.to(target).emit("teacher:ai-analysis", { studentId: s.student_id, analysis });
               }
             }
           }
@@ -94,12 +96,9 @@ const tracker = new TelemetryTracker(
   }
 );
 
-// 启动文件广播 HTTP 辅助服务（供 api-server 上传后通知学生）
-startFileNotifyServer(io, API_PORT);
-
 // ── Socket.IO 连接处理 ──
 
-io.on("connection", (socket) => {
+io.on("connection", async (socket) => {
   const role = socket.handshake.query.role as string | undefined;
   const studentId = socket.handshake.query.studentId as string | undefined;
   const studentName = socket.handshake.query.studentName as string | undefined;
@@ -107,10 +106,24 @@ io.on("connection", (socket) => {
   // ── 教师端事件 ──
   if (role === "teacher") {
     socket.join("teachers");
+    const teacherId = socket.handshake.query.teacherId as string | undefined;
 
-    // 推送当前在线学生列表（有 socket 的才算在线）
+    // 查该教师的班级列表，加入对应 class: room
+    let teacherClassIds: string[] = [];
+    if (teacherId) {
+      try {
+        const result = await pool.query("SELECT id FROM system.classes WHERE teacher_id = $1", [teacherId]);
+        teacherClassIds = result.rows.map((r: any) => r.id);
+        teacherClassIds.forEach((cid) => socket.join(`class:${cid}`));
+      } catch (e) {
+        console.error("[ws] Failed to fetch teacher classes:", e);
+      }
+    }
+
+    // 推送当前在线学生列表（仅该教师班级内的学生）
     const currentOnline = Array.from(sessions.entries())
       .filter(([_, s]) => s.sockets.size > 0)
+      .filter(([_, s]) => !s.classId || teacherClassIds.includes(s.classId))
       .map(([id, s]) => ({
         studentId: id,
         studentName: s.studentName,
@@ -128,7 +141,8 @@ io.on("connection", (socket) => {
       session.takeoverTeacherSocket = socket.id;
       io.to(`student:${sid}`).emit("takeover:start", { teacherSocketId: socket.id });
       socket.emit("teacher:takeover-started", { studentId: sid });
-      io.to("teachers").emit("teacher:status-update", { studentId: sid, takeoverActive: true });
+      const takeoverTarget = session.classId ? `class:${session.classId}` : "teachers";
+      io.to(takeoverTarget).emit("teacher:status-update", { studentId: sid, takeoverActive: true });
     });
 
     // 教师释放接管
@@ -138,7 +152,8 @@ io.on("connection", (socket) => {
       session.takeoverActive = false;
       io.to(`student:${sid}`).emit("takeover:stop", {});
       session.takeoverTeacherSocket = null;
-      io.to("teachers").emit("teacher:status-update", { studentId: sid, takeoverActive: false });
+      const releaseTarget = session.classId ? `class:${session.classId}` : "teachers";
+      io.to(releaseTarget).emit("teacher:status-update", { studentId: sid, takeoverActive: false });
     });
 
     // 教师手动触发 AI 分析（前端传 taskGroup）
@@ -149,7 +164,8 @@ io.on("connection", (socket) => {
       const analysis = await analyzeStudent(sid, session.studentName, telemetry, taskGroup);
       tracker.clearStudent(sid);
       if (analysis) {
-        io.to("teachers").emit("teacher:ai-analysis", { studentId: sid, analysis });
+        const target = session.classId ? `class:${session.classId}` : "teachers";
+        io.to(target).emit("teacher:ai-analysis", { studentId: sid, analysis });
       } else {
         socket.emit("teacher:error", { studentId: sid, message: "AI 分析服务不可用" });
       }
@@ -175,21 +191,36 @@ io.on("connection", (socket) => {
     let session = sessions.get(studentId);
     const wasOnline = !!session;
     if (!session) {
-      session = { studentId, studentName: studentName || studentId, sockets: new Set(), takeoverActive: false, takeoverTeacherSocket: null };
+      // 查学生所属班级
+      let classId: string | null = null;
+      try {
+        const r = await pool.query("SELECT class_id FROM system.students WHERE student_no = $1", [studentId]);
+        classId = r.rows[0]?.class_id ?? null;
+      } catch (e) {
+        console.error("[ws] Failed to fetch student class:", e);
+      }
+      session = { studentId, studentName: studentName || studentId, sockets: new Set(), classId, takeoverActive: false, takeoverTeacherSocket: null };
       sessions.set(studentId, session);
     }
     session.sockets.add(socket.id);
     socket.join(`student:${studentId}`);
     // 首次上线才广播 online（后续 socket 不重复通知）
-    if (!wasOnline) io.to("teachers").emit("teacher:student-online", { studentId, studentName: session.studentName });
+    if (!wasOnline) {
+      if (session.classId) {
+        io.to(`class:${session.classId}`).emit("teacher:student-online", { studentId, studentName: session.studentName });
+      } else {
+        io.to("teachers").emit("teacher:student-online", { studentId, studentName: session.studentName });
+      }
+    }
 
     // 接收学生遥测数据：idle 直接转发，其余进 tracker 缓冲
     socket.on("student:telemetry", (data: TelemetryData) => {
+      const target = session.classId ? `class:${session.classId}` : "teachers";
       if (data.type === "idle") {
-        io.to("teachers").emit("teacher:telemetry", { studentId, data });
+        io.to(target).emit("teacher:telemetry", { studentId, data });
         return;
       }
-      io.to("teachers").emit("teacher:telemetry", { studentId, data });
+      io.to(target).emit("teacher:telemetry", { studentId, data });
       tracker.record(studentId, data);
     });
 
@@ -208,7 +239,11 @@ io.on("connection", (socket) => {
         if (s.takeoverActive && s.takeoverTeacherSocket) {
           io.to(s.takeoverTeacherSocket).emit("takeover:state", { type: "disconnected" });
         }
-        io.to("teachers").emit("teacher:student-offline", { studentId });
+        if (s.classId) {
+          io.to(`class:${s.classId}`).emit("teacher:student-offline", { studentId });
+        } else {
+          io.to("teachers").emit("teacher:student-offline", { studentId });
+        }
       }, 5000));
     });
   }
