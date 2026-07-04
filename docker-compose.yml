@@ -29,9 +29,9 @@ services:
 
   # ─── 2. API Server — Express REST 接口 ─────────────────────
   api-server:
+    image: tobegold574/sqlense-api-server:latest
     build:
       context: ./packages/api-server
-      dockerfile: Dockerfile
     ports:
       - "4000:4000"
     environment:
@@ -53,9 +53,9 @@ services:
   # ─── 3. WebSocket 服务器 ──────────────────────────────────
   websocket:
     restart: unless-stopped
+    image: tobegold574/sqlense-websocket:latest
     build:
       context: ./packages/websocket-server
-      dockerfile: Dockerfile
     ports:
       - "3001:3001"
     environment:
@@ -73,6 +73,7 @@ services:
   # ─── 4. AI Gateway — Python FastAPI ────────────────────────
   # 接收 WS 服务器转发的遥测，运行 LLM 分析（Code/SQL/Judge Agent）
   ai-gateway:
+    image: tobegold574/sqlense-ai-gateway:latest
     build:
       context: ./packages/ai-gateway
     ports:
@@ -93,9 +94,9 @@ services:
   # ─── 5. Auth Proxy — Nginx 反向代理 ──────────────────────
   # 对学生 code-server 做 auth_request 鉴权，阻止未登录访问
   auth-proxy:
+    image: tobegold574/sqlense-auth-proxy:latest
     build:
       context: ./packages/auth-proxy
-      dockerfile: Dockerfile
     ports:
       - "8080:8080"
     depends_on:
@@ -104,9 +105,9 @@ services:
   # ─── 6. Web — React SPA（教师控制台 + 学生仪表盘） ────────
   web:
     restart: unless-stopped
+    image: tobegold574/sqlense-web:latest
     build:
       context: ./packages/web
-      dockerfile: Dockerfile
     ports:
       - "3000:80"                      # 宿主机 3000 → 容器内 nginx 80
     depends_on:
@@ -120,7 +121,7 @@ services:
   # 执行 scripts/build-extension.sh 安装 npm 依赖）。学生 settings.json 由
   # ensureStudentWorkspace() 懒加载创建（调用 API /workspace-env）。
   code-server:
-    image: sqlense-code-server:latest
+    image: tobegold574/sqlense-code-server:latest
     ports: ["8443:8443"]
     environment:
       API_SERVER_URL: http://api-server:4000
