@@ -116,7 +116,8 @@ services:
 
   # ─── 7. code-server（单容器，X-Student-Id 路由） ────────────
   # 所有学生共享一个 VS Code Server，通过 X-Student-Id header 区分工作区。
-  # 扩展首次启动时安装到 shared-ext volume。学生 settings.json 由
+  # SQLense VS Code 扩展通过 volume 注入 shared-ext/sqlense-vscode（宿主机需先
+  # 执行 scripts/build-extension.sh 安装 npm 依赖）。学生 settings.json 由
   # ensureStudentWorkspace() 懒加载创建（调用 API /workspace-env）。
   code-server:
     image: sqlense-code-server:latest
@@ -129,7 +130,7 @@ services:
       PG_HOST: postgres
     volumes:
       - shared-ext:/workspaces/.shared-extensions
-      - ./packages/vs-code-extension:/opt/extensions/sqlense-vscode:ro
+      - ./packages/vs-code-extension:/workspaces/.shared-extensions/sqlense-vscode:ro
       - ./packages/code-server/startup.sh:/startup.sh:ro
     depends_on:
       postgres:

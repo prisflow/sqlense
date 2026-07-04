@@ -18,13 +18,13 @@ docker compose build <service>
 docker compose up -d --no-deps <service>
 ```
 
-## 构建 VS Code 扩展
+## 构建 VS Code 扩展（首次部署必做）
 
 ```bash
 bash scripts/build-extension.sh
 ```
 
-输出到 `packages/vs-code-extension/node_modules/`。
+在 `packages/vs-code-extension/node_modules/` 安装生产依赖，随后 volume 注入 code-server 容器。
 
 ## 批量置备学生
 
