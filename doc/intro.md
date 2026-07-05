@@ -25,7 +25,7 @@ docker compose up -d --build
 7 个 Docker 容器
 ├── postgres           — 系统库 (sqlense) + 学生独立库 (db_student_N)
 ├── api-server         — Express REST API, httpOnly Cookie JWT 认证
-├── websocket          — Socket.IO 实时事件总线
+├── websocket-server   — Socket.IO 实时事件总线
 ├── ai-gateway         — Python FastAPI, 多 Agent 智能分析
 ├── auth-proxy         — Nginx auth_request, code-server 认证网关
 ├── web               — Nginx + React SPA, 教师监控面板
@@ -35,7 +35,7 @@ docker compose up -d --build
 ```mermaid
 graph TB
     SPA[React SPA :3000] --> API[API Server :4000]
-    SPA --> WS[WebSocket :3001]
+    SPA --> WS[websocket-server :3001]
     SPA -- iframe --> CS[code-server :8443]
     WS --> AI[AI Gateway :8000]
     AI --> PG[PostgreSQL :5432]
@@ -69,6 +69,14 @@ graph TB
 - AI 分析面板 (诊断摘要、进度跟踪)
 - 远程协助 (iframe 接管 IDE)
 - Toast 通知 (诊断摘要自动推送)
+
+### 班级聊天室
+- 学生通过侧边栏进入聊天，向本班教师发送消息
+- 教师可在右侧面板切换班级进行回复
+- 基于 WebSocket Socket.IO 实时推送，不依赖 HTTP 轮询
+- 消息存储于系统数据库 `system.chat_messages` 表（纯 PG，无额外中间件）
+- 频率限制：每学生 1 条/秒
+- 学生 WebSocket 连接后自动加入班级 room，浏览器 tab 切换时保持连接
 
 ## 测试
 

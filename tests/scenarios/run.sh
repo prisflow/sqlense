@@ -34,7 +34,7 @@ echo "────────────────────────�
 # Phase 4: 单学生高频发送触发flushStudent分析
 echo " 等待 Layer 1 残留请求消散 (30s)..."
 sleep 30
-docker compose -f "$ROOT/docker-compose.yml" restart websocket
+docker compose -f "$ROOT/docker-compose.yml" restart websocket-server
 sleep 5
 python3 layers/layer2_highfreq.py 2>&1 | tee /tmp/layer2_out.txt
 LAYER2_A=$(python3 -c "import json; r=json.load(open('layers/layer2_report.json')); print(r.get('analyses',0))")

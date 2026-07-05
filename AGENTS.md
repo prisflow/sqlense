@@ -31,7 +31,7 @@ docker compose logs -f web
 |-----------|------|------|
 | postgres | 5432 | System DB (`sqlense`) + student DBs (`db_student_*`) |
 | api-server | 4000 | Express REST API, httpOnly Cookie JWT auth |
-| websocket | 3001 | Socket.IO real-time events |
+| websocket-server | 3001 | Socket.IO real-time events |
 | ai-gateway | 8000 | Python FastAPI, telemetry analysis |
 | auth-proxy | 8080 | Nginx auth_request gate for code-server |
 | web | 3000 | Nginx + React SPA |

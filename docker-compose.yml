@@ -1,6 +1,6 @@
 # ============================================================
 # SQLense — 数据库实验教学平台
-# 7 个容器：postgres / api-server / websocket / ai-gateway /
+# 7 个容器：postgres / api-server / websocket-server / ai-gateway /
 #            auth-proxy / web / code-server
 # ============================================================
 
@@ -51,9 +51,9 @@ services:
         condition: service_healthy
 
   # ─── 3. WebSocket 服务器 ──────────────────────────────────
-  websocket:
+  websocket-server:
     restart: unless-stopped
-    image: tobegold574/sqlense-websocket:latest
+    image: tobegold574/sqlense-websocket-server:latest
     build:
       context: ./packages/websocket-server
     ports:
@@ -112,7 +112,7 @@ services:
       - "3000:80"                      # 宿主机 3000 → 容器内 nginx 80
     depends_on:
       - api-server
-      - websocket
+      - websocket-server
       - ai-gateway
 
   # ─── 7. code-server（单容器，X-Student-Id 路由） ────────────
@@ -125,8 +125,8 @@ services:
     ports: ["8443:8443"]
     environment:
       API_SERVER_URL: http://api-server:4000
-      WS_SERVER: ws://websocket:3001
-      SQLENSE_WS_SERVER: ws://websocket:3001
+      WS_SERVER: ws://websocket-server:3001
+      SQLENSE_WS_SERVER: ws://websocket-server:3001
       CODE_SERVER_RECONNECTION_GRACE_TIME: "0"
       PG_HOST: postgres
     volumes:

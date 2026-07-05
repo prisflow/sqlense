@@ -15,7 +15,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       "/api": { target: "http://api-server:4000" },
-      "/socket.io": { target: "http://websocket:3001", ws: true },
+      "/socket.io": { target: "http://websocket-server:3001", ws: true },
     },
   },
 });

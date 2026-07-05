@@ -61,6 +61,15 @@ erDiagram
         text value
         timestamp updated_at
     }
+
+    chat_messages {
+        uuid id PK
+        uuid class_id FK "→ classes.id"
+        uuid sender_id FK "→ users.id"
+        varchar display_name "发送者显示名"
+        text content
+        timestamp created_at
+    }
 ```
 
 ## 外键关系
@@ -73,6 +82,8 @@ graph TB
     U -->|user_id| AL[audit_logs]
     S -->|student_id| SUB[submissions]
     T[tasks] -->|task_id| SUB
+    C -->|class_id| CM[chat_messages]
+    U -->|sender_id| CM
 ```
 
 ## 学生隔离

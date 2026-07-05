@@ -67,6 +67,22 @@ graph TB
 | `teacher:takeover` | 请求接管学生 `{ studentId }` |
 | `teacher:takeover-release` | 释放接管 `{ studentId }` |
 | `teacher:ai-query` | 手动触发 AI 分析 `{ studentId, taskGroup? }` |
+| `chat:send` | 发送聊天消息 `{ classId, content }` |
+| `chat:history` | 拉取聊天历史 `{ classId }` → callback `{ classId, messages[] }` |
+
+## 学生 → 服务器
+
+| 事件 | 说明 |
+|------|------|
+| `chat:send` | 发送聊天消息 `{ content }`（classId 由服务端从学生身份获取） |
+| `chat:history` | 拉取聊天历史 → callback `{ classId, messages[] }` |
+
+## 服务器 → 客户端（广播至班级 room）
+
+| 事件 | 说明 |
+|------|------|
+| `chat:message` | 新消息广播 `{ id, classId, senderId, displayName, content, createdAt }` |
+| `chat:error` | 发送失败 `{ message }` |
 
 ## TelemetryTracker 调度
 
