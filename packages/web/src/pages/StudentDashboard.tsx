@@ -22,7 +22,8 @@ export default function StudentDashboard() {
       .catch((e) => console.error("Failed to load student data:", e));
   }, []);
 
-  const ideUrl = data ? `//${window.location.hostname}:8080/student-${data.student_no}/` : "";
+  const ideBaseUrl = import.meta.env.VITE_IDE_BASE_URL || `//${window.location.hostname}`;
+  const ideUrl = data ? `${ideBaseUrl}/student-${data.student_no}/` : "";
 
   if (!data) return (
     <div className="h-screen flex flex-col bg-white">
