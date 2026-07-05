@@ -14,3 +14,4 @@ tests/scenarios/layers/__pycache__/
 tests/scenarios/students/__pycache__/
 tests/load/report.json
 notes/
+docker-compose.override.yml
