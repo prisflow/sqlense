@@ -124,7 +124,7 @@ export function StudentGrid({ onAnalyze, onTakeover }: Props) {
   return (
     <div className="flex-1 overflow-y-auto p-4">
       <h2 className="text-sm font-medium text-gray-500 mb-4">
-        在线学生
+        所有学生
         <span className="ml-2 text-xs text-gray-400">({students.length})</span>
       </h2>
       {students.length === 0 ? (

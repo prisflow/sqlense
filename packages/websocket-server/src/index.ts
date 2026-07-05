@@ -26,6 +26,8 @@ const io = new Server(httpServer, {
 const sessions = new Map<string, StudentSession>();
 /** 断线延迟标记定时器（studentId → timeout） */
 const offlineTimers = new Map<string, NodeJS.Timeout>();
+/** 聊天频率限制（socketId → 上次发送时间戳） */
+const lastChatTime = new Map<string, number>();
 
 /** Telemetry 双缓冲追踪器。
  *
@@ -119,6 +121,7 @@ io.on("connection", async (socket) => {
         console.error("[ws] Failed to fetch teacher classes:", e);
       }
     }
+    socket.data.teacherClassIds = teacherClassIds;
 
     // 推送当前在线学生列表（仅该教师班级内的学生）
     const currentOnline = Array.from(sessions.entries())
@@ -171,8 +174,56 @@ io.on("connection", async (socket) => {
       }
     });
 
+    // 教师发送聊天消息
+    socket.on("chat:send", async ({ classId, content }: { classId?: string; content?: string }) => {
+      if (!content || typeof content !== "string") return;
+      content = content.trim();
+      if (!content || content.length > 1000) return;
+      const now = Date.now();
+      if (now - (lastChatTime.get(socket.id) || 0) < 1000) return;
+      lastChatTime.set(socket.id, now);
+      if (!classId || !socket.data.teacherClassIds?.includes(classId)) {
+        return socket.emit("chat:error", { message: "无权向该班级发消息" });
+      }
+      try {
+        const { rows } = await pool.query(
+          `INSERT INTO system.chat_messages (class_id, user_id, role, display_name, content)
+           VALUES ($1, $2, 'teacher', $3, $4)
+           RETURNING id, created_at`,
+          [classId, teacherId, socket.handshake.query.teacherName || "教师", content]
+        );
+        io.to(`class:${classId}`).emit("chat:message", {
+          id: rows[0].id, classId, userId: teacherId,
+          role: "teacher", displayName: socket.handshake.query.teacherName || "教师",
+          content, createdAt: rows[0].created_at,
+        });
+      } catch (e) {
+        console.error("[ws] chat:send error:", e);
+      }
+    });
+
+    // 教师请求聊天历史
+    socket.on("chat:history", async ({ classId }: { classId?: string }, ack?: Function) => {
+      if (!classId || !socket.data.teacherClassIds?.includes(classId)) return;
+      try {
+        const { rows } = await pool.query(
+          `SELECT cm.id, cm.class_id AS "classId", cm.user_id AS "userId",
+                  cm.role, cm.display_name AS "displayName", cm.content, cm.created_at AS "createdAt"
+           FROM system.chat_messages cm
+           WHERE cm.class_id = $1
+           ORDER BY cm.created_at DESC LIMIT 50`,
+          [classId]
+        );
+        if (ack) ack(rows.reverse());
+        else socket.emit("chat:history", { classId, messages: rows.reverse() });
+      } catch (e) {
+        console.error("[ws] chat:history error:", e);
+      }
+    });
+
     // 教师断开时清理其发起的接管
     socket.on("disconnect", () => {
+      lastChatTime.delete(socket.id);
       for (const [, session] of sessions) {
         if (session.takeoverTeacherSocket === socket.id) {
           session.takeoverActive = false;
@@ -187,33 +238,24 @@ io.on("connection", async (socket) => {
   if (role === "student" && studentId) {
     clearTimeout(offlineTimers.get(studentId));
     offlineTimers.delete(studentId);
-    // 追加到该学生的 socket 集合（学生可能有多条连接）
-    let session = sessions.get(studentId);
-    const wasOnline = !!session;
-    if (!session) {
-      // 查学生所属班级
-      let classId: string | null = null;
-      try {
-        const r = await pool.query("SELECT class_id FROM system.students WHERE student_no = $1", [studentId]);
-        classId = r.rows[0]?.class_id ?? null;
-      } catch (e) {
-        console.error("[ws] Failed to fetch student class:", e);
-      }
-      session = { studentId, studentName: studentName || studentId, sockets: new Set(), classId, takeoverActive: false, takeoverTeacherSocket: null };
-      sessions.set(studentId, session);
-    }
-    session.sockets.add(socket.id);
-    socket.join(`student:${studentId}`);
-    // 首次上线才广播 online（后续 socket 不重复通知）
-    if (!wasOnline) {
-      if (session.classId) {
-        io.to(`class:${session.classId}`).emit("teacher:student-online", { studentId, studentName: session.studentName });
-      } else {
-        io.to("teachers").emit("teacher:student-online", { studentId, studentName: session.studentName });
-      }
-    }
 
-    // 接收学生遥测数据：idle 直接转发，其余进 tracker 缓冲
+    // 建占位 session（classId 初始 null，后续补全）
+    const wasOnline = sessions.has(studentId);
+    if (!sessions.has(studentId)) {
+      sessions.set(studentId, {
+        studentId, studentName: studentName || studentId,
+        sockets: new Set(), classId: null,
+        takeoverActive: false, takeoverTeacherSocket: null,
+      });
+    }
+    const session = sessions.get(studentId)!;
+
+    // readyPromise：classId 就绪后 resolve，handler 内 await 它确保不竞态
+    let resolveReady: (() => void) | null = null;
+    const readyPromise = new Promise<void>(r => { resolveReady = r; });
+    if (wasOnline) resolveReady!();
+
+    // 注册 handler（放在任何 await 之前，确保客户端事件不被丢弃）
     socket.on("student:telemetry", (data: TelemetryData) => {
       const target = session.classId ? `class:${session.classId}` : "teachers";
       if (data.type === "idle") {
@@ -224,13 +266,61 @@ io.on("connection", async (socket) => {
       tracker.record(studentId, data);
     });
 
-    // 学生断开 → 只移出当前 socket，还有别的 socket 就不触发离线
+    socket.on("chat:send", async ({ content }: { content?: string }) => {
+      if (!content || typeof content !== "string") return;
+      content = content.trim();
+      if (!content || content.length > 1000) return;
+      const now = Date.now();
+      if (now - (lastChatTime.get(socket.id) || 0) < 1000) return;
+      lastChatTime.set(socket.id, now);
+      const classId = session.classId;
+      if (!classId) return;
+      try {
+        const userResult = await pool.query("SELECT user_id FROM system.students WHERE student_no = $1", [studentId]);
+        const userId = userResult.rows[0]?.user_id;
+        if (!userId) return;
+        const { rows } = await pool.query(
+          `INSERT INTO system.chat_messages (class_id, user_id, role, display_name, content)
+           VALUES ($1, $2, 'student', $3, $4)
+           RETURNING id, created_at`,
+          [classId, userId, studentName || studentId, content]
+        );
+        io.to(`class:${classId}`).emit("chat:message", {
+          id: rows[0].id, classId, userId,
+          role: "student", displayName: studentName || studentId,
+          content, createdAt: rows[0].created_at,
+        });
+      } catch (e) {
+        console.error("[ws] student chat:send error:", e);
+      }
+    });
+
+    socket.on("chat:history", async (_data: any, ack?: Function) => {
+      await readyPromise;
+      const classId = session.classId;
+      if (!classId) return;
+      try {
+        const { rows } = await pool.query(
+          `SELECT cm.id, cm.class_id AS "classId", cm.user_id AS "userId",
+                  cm.role, cm.display_name AS "displayName", cm.content, cm.created_at AS "createdAt"
+           FROM system.chat_messages cm
+           WHERE cm.class_id = $1
+           ORDER BY cm.created_at DESC LIMIT 50`,
+          [classId]
+        );
+        if (ack) ack(rows.reverse());
+        else socket.emit("chat:history", { classId, messages: rows.reverse() });
+      } catch (e) {
+        console.error("[ws] student chat:history error:", e);
+      }
+    });
+
     socket.on("disconnect", () => {
+      lastChatTime.delete(socket.id);
       const s = sessions.get(studentId);
       if (!s) return;
       s.sockets.delete(socket.id);
       if (s.sockets.size > 0) return;
-      // 所有 socket 都断了 → 从 sessions 移除并启动 5s 离线计时
       sessions.delete(studentId);
       clearTimeout(offlineTimers.get(studentId));
       offlineTimers.set(studentId, setTimeout(() => {
@@ -246,6 +336,32 @@ io.on("connection", async (socket) => {
         }
       }, 5000));
     });
+
+    // 加入基础房间、开始异步查 classId
+    session.sockets.add(socket.id);
+    socket.join(`student:${studentId}`);
+    if (session.classId) socket.join(`class:${session.classId}`);
+
+    if (!session.classId) {
+      pool.query("SELECT class_id FROM system.students WHERE student_no = $1", [studentId])
+        .then(r => {
+          session.classId = r.rows[0]?.class_id ?? null;
+        })
+        .catch(e => {
+          console.error("[ws] Failed to fetch student class:", e);
+        })
+        .finally(() => {
+          if (session.classId) {
+            socket.join(`class:${session.classId}`);
+            io.to(`class:${session.classId}`).emit("teacher:student-online", { studentId, studentName: session.studentName });
+          } else {
+            io.to("teachers").emit("teacher:student-online", { studentId, studentName: session.studentName });
+          }
+          resolveReady!();
+        });
+    } else {
+      resolveReady!();
+    }
   }
 });
 

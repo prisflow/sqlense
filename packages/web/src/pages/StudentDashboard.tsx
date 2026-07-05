@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import StudentDrawer from "../components/student/StudentDrawer";
 
-interface StudentData { student_no: string; display_name: string; pg_db_name: string; pg_role_name: string; cs_password: string; cs_port: number; status: string; }
+interface StudentData { student_no: string; display_name: string; pg_db_name: string; pg_role_name: string; cs_password: string; cs_port: number; status: string; class_id: string; }
 
 // 学生仪表盘，展示 IDE 和资料面板
 export default function StudentDashboard() {

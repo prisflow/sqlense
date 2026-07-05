@@ -17,6 +17,17 @@ export interface TelemetryData {
   payload?: Record<string, unknown>;  // 事件负载，结构随 type 变化
 }
 
+/** 聊天消息 */
+export interface ChatMessage {
+  id: number;
+  classId: string;
+  userId: string;
+  role: "teacher" | "student";
+  displayName: string;
+  content: string;
+  createdAt: string;
+}
+
 /** AI 多智能体分析结果 */
 export interface AIAnalysis {
   student_id: string;            // 学号

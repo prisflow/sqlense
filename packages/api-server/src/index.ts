@@ -47,16 +47,17 @@ async function waitForDb(): Promise<void> {
 }
 
 async function initAdminPassword(): Promise<void> {
-  const password = process.env.ADMIN_PASSWORD;
-  if (!password || password === "admin") {
-    return;
-  }
+  const password = process.env.ADMIN_PASSWORD || "admin";
   try {
     const hash = await bcrypt.hash(password, 10);
-    await pool.query("UPDATE system.users SET password_hash = $1 WHERE username = 'admin'", [hash]);
-    console.log("[init] Admin password updated from ADMIN_PASSWORD env var");
+    await pool.query(`
+      INSERT INTO system.users (id, username, password_hash, role, display_name)
+      VALUES (gen_random_uuid(), 'admin', $1, 'admin', '管理员')
+      ON CONFLICT (username) DO UPDATE SET password_hash = $1
+    `, [hash]);
+    console.log("[init] Admin user ensured");
   } catch (e) {
-    console.error("[init] Failed to update admin password:", e);
+    console.error("[init] Failed to ensure admin user:", e);
   }
 }
 

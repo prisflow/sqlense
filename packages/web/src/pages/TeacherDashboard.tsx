@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "../components/AuthGuard";
@@ -8,9 +8,10 @@ import { StudentGrid } from "../components/teacher/StudentGrid";
 import { AIPriorityPanel } from "../components/teacher/AIPriorityPanel";
 import VSCodeViewer from "../components/teacher/VSCodeViewer";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectLabel, SelectItem } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import type { StudentInfo } from "../types";
+import type { StudentInfo, ChatMessage } from "../types";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /** 教师控制台主页面 — 学生网格 + AI 分析面板 + 文件共享 + 接管 IDE 弹窗 */
@@ -25,11 +26,15 @@ export default function TeacherDashboard() {
   const mergeStudent = useStore((s) => s.mergeStudent);
 
   // ========== WebSocket 操作 ==========
-  const { requestAnalysis, startTakeover, stopTakeover } = useWebSocket(authUser?.userId);
+  const { requestAnalysis, startTakeover, stopTakeover, chatMessages, loadChatHistory, sendChat } = useWebSocket(authUser?.userId, authUser?.displayName);
 
   // ========== UI 状态 ==========
   const [loading, setLoading] = useState(true);
   const [takeoverOpen, setTakeoverOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatClassId, setChatClassId] = useState("");
+  const [chatInput, setChatInput] = useState("");
+  const chatListRef = useRef<HTMLDivElement>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadClassId, setUploadClassId] = useState("");
   const [uploadTaskGroup, setUploadTaskGroup] = useState("");
@@ -61,6 +66,13 @@ export default function TeacherDashboard() {
 
     fetch("/api/dashboard/my-classes").then(r => r.json()).then(d => setTeacherClasses(d.classes)).catch(() => {});
   }, []);
+
+  // 聊天消息自动滚到底
+  useEffect(() => {
+    if (chatListRef.current) {
+      chatListRef.current.scrollTop = chatListRef.current.scrollHeight;
+    }
+  }, [chatMessages, chatClassId]);
 
   if (loading) return (
     <div className="h-screen flex flex-col bg-white">
@@ -113,6 +125,10 @@ export default function TeacherDashboard() {
           <span className="text-xs text-gray-400">{students.filter(s => s.online).length} 在线 / {students.length} 总</span>
           {/* WebSocket 连接指示灯 */}
           <span className={`inline-block w-2 h-2 rounded-full ${wsConnected ? "bg-green-500" : "bg-red-400"}`} />
+          {/* 聊天按钮 */}
+          <Button variant="ghost" size="sm" onClick={() => { setChatOpen(!chatOpen); if (!chatOpen && chatClassId) loadChatHistory(chatClassId); }}>
+            {chatOpen ? "关闭聊天" : "聊天"}
+          </Button>
           {/* 共享文件按钮 */}
           <Button variant="ghost" size="sm" onClick={() => setUploadOpen(true)}>共享文件</Button>
           {/* 退出登录 */}
@@ -137,6 +153,47 @@ export default function TeacherDashboard() {
         <aside className="w-80 border-l border-gray-200 bg-gray-50/50">
           <AIPriorityPanel />
         </aside>
+        {/* 右侧聊天面板（始终挂载，用 CSS 隐藏/显示） */}
+        <aside className={`w-80 border-l border-gray-200 bg-white flex flex-col${!chatOpen ? " hidden" : ""}`}>
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200">
+              <Select value={chatClassId} onValueChange={v => { setChatClassId(v ?? ""); loadChatHistory(v ?? ""); }} items={teacherClasses.map(c => ({ label: c.name, value: c.id }))}>
+                <SelectTrigger className="w-40 h-8 text-xs"><SelectValue placeholder="选择班级" /></SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>班级</SelectLabel>
+                    {teacherClasses.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+            <div ref={chatListRef} className="flex-1 overflow-y-auto p-3 space-y-2">
+              {!chatClassId && <p className="text-xs text-gray-400 text-center pt-8">请先选择班级</p>}
+              {chatClassId && chatMessages.filter(m => m.classId === chatClassId).length === 0 && (
+                <p className="text-xs text-gray-400 text-center pt-8">暂无消息</p>
+              )}
+              {chatClassId && chatMessages.filter(m => m.classId === chatClassId).map((m, i) => (
+                <div key={i} className={`text-sm rounded-lg p-2.5 max-w-[85%] ${m.role === "student" ? "bg-blue-50 mr-auto" : "bg-gray-100 ml-auto"}`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-medium text-gray-700">{m.displayName}</span>
+                    <span className="text-[10px] text-gray-400">{m.role === "teacher" ? "教师" : "学生"}</span>
+                  </div>
+                  <p className="text-sm text-gray-900 whitespace-pre-wrap break-words">{m.content}</p>
+                </div>
+              ))}
+            </div>
+            {chatClassId && (
+              <div className="border-t border-gray-200 p-3 flex gap-2">
+                <Input
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(chatClassId, chatInput.trim()); setChatInput(""); } }}
+                  placeholder="输入消息..."
+                  className="flex-1 h-9 text-sm"
+                />
+                <Button size="sm" onClick={() => { sendChat(chatClassId, chatInput.trim()); setChatInput(""); }} className="h-9">发送</Button>
+              </div>
+            )}
+          </aside>
       </main>
 
       {/* ============================== */}

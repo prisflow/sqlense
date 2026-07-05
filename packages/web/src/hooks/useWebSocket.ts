@@ -1,8 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { io, Socket } from "socket.io-client";
 import { useStore } from "../stores/useStore";
-import type { TelemetryData, AIAnalysis, StudentInfo } from "../types";
+import type { TelemetryData, AIAnalysis, StudentInfo, ChatMessage } from "../types";
 
 // 截断长文本，超出部分用省略号替代
 function truncate(text: string, max = 80): string {
@@ -10,13 +10,14 @@ function truncate(text: string, max = 80): string {
 }
 
 // 管理 WebSocket 连接，接收实时遥测和 AI 分析
-export function useWebSocket(teacherId?: string) {
+export function useWebSocket(teacherId?: string, teacherName?: string) {
   const socketRef = useRef<Socket | null>(null);
   const store = useStore();
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 
   useEffect(() => {
     const socket = io({
-      query: { role: "teacher", teacherId: teacherId ?? "" },
+      query: { role: "teacher", teacherId: teacherId ?? "", teacherName: teacherName ?? "教师" },
       transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionDelay: 2000,
@@ -90,8 +91,23 @@ export function useWebSocket(teacherId?: string) {
       }
     });
 
+    // 教师聊天
+    socket.on("chat:message", (msg: ChatMessage) => {
+      setChatMessages((prev) => [...prev, msg]);
+    });
+
+    socket.on("chat:history", ({ classId, messages }: { classId: string; messages: ChatMessage[] }) => {
+      // 替换该班级的历史消息
+      setChatMessages((prev) => [...prev.filter((m) => m.classId !== classId), ...messages]);
+    });
+
+    socket.on("chat:error", ({ message }: { message: string }) => {
+      toast.error(message);
+    });
+
     return () => {
       socket.disconnect();
+      setChatMessages([]);
     };
   }, [teacherId]);
 
@@ -113,5 +129,15 @@ export function useWebSocket(teacherId?: string) {
     store.setSelectedStudentId(null);
   };
 
-  return { requestAnalysis, startTakeover, stopTakeover };
+  // 加载班级聊天历史
+  const loadChatHistory = useCallback((classId: string) => {
+    socketRef.current?.emit("chat:history", { classId });
+  }, []);
+
+  // 发送聊天消息
+  const sendChat = useCallback((classId: string, content: string) => {
+    socketRef.current?.emit("chat:send", { classId, content });
+  }, []);
+
+  return { requestAnalysis, startTakeover, stopTakeover, chatMessages, loadChatHistory, sendChat };
 }

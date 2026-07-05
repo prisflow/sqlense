@@ -71,7 +71,19 @@ CREATE TABLE system.audit_logs (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- 班级聊天消息
+CREATE TABLE IF NOT EXISTS system.chat_messages (
+    id SERIAL PRIMARY KEY,
+    class_id UUID NOT NULL REFERENCES system.classes(id),
+    user_id UUID NOT NULL REFERENCES system.users(id),
+    role VARCHAR(10) NOT NULL CHECK (role IN ('teacher', 'student')),
+    display_name VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- 索引
 CREATE INDEX idx_audit_logs_created_at ON system.audit_logs(created_at DESC);
 CREATE INDEX idx_audit_logs_action ON system.audit_logs(action);
 CREATE INDEX idx_task_files_class ON system.task_files(class_id, task_group);
+CREATE INDEX idx_chat_class_created ON system.chat_messages(class_id, created_at DESC);
