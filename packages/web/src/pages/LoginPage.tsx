@@ -51,36 +51,48 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
-      <div className="w-2/5 flex items-center justify-center">
-        <div className="w-full max-w-sm px-12">
-          <h2 className="text-xl font-semibold text-gray-900 mb-1">登录</h2>
-          <p className="text-sm text-gray-500 mb-6">请输入您的账号和密码</p>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">账号</label>
-              <Input
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="教师账号或学号"
-                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-                autoFocus
-              />
+      <div className="w-2/5 flex flex-col">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-full max-w-sm px-12">
+            <h2 className="text-xl font-semibold text-gray-900 mb-1">登录</h2>
+            <p className="text-sm text-gray-500 mb-6">请输入您的账号和密码</p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">账号</label>
+                <Input
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="教师账号或学号"
+                  onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">密码</label>
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="密码"
+                  onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                />
+              </div>
+              {error && <p className="text-sm text-red-500">{error}</p>}
+              <Button onClick={handleLogin} disabled={loading} className="w-full bg-gray-900 hover:bg-gray-800 text-white">
+                {loading ? "登录中..." : "登录"}
+              </Button>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">密码</label>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="密码"
-                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-              />
-            </div>
-            {error && <p className="text-sm text-red-500">{error}</p>}
-            <Button onClick={handleLogin} disabled={loading} className="w-full bg-gray-900 hover:bg-gray-800 text-white">
-              {loading ? "登录中..." : "登录"}
-            </Button>
           </div>
+        </div>
+        <div className="pb-4 text-center">
+          <a
+            href="https://beian.miit.gov.cn/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] text-gray-300 hover:text-gray-400 transition-colors"
+          >
+            沪ICP备2026028440号
+          </a>
         </div>
       </div>
     </div>
