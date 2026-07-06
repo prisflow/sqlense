@@ -34,7 +34,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex">
+    <div className="min-h-screen bg-white flex relative">
       <div className="w-3/5 bg-gradient-to-br from-indigo-50 via-white to-indigo-100 border-r border-gray-200 flex items-center justify-center">
         <div className="text-center">
           <svg viewBox="0 0 1024 1024" className="w-16 h-16 mx-auto mb-6" xmlns="http://www.w3.org/2000/svg">
@@ -51,7 +51,7 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
-      <div className="w-2/5 flex flex-col">
+      <div className="w-2/5 flex flex-col relative">
         <div className="flex-1 flex items-center justify-center">
           <div className="w-full max-w-sm px-12">
             <h2 className="text-xl font-semibold text-gray-900 mb-1">登录</h2>
@@ -84,12 +84,12 @@ export default function LoginPage() {
             </div>
           </div>
         </div>
-        <div className="pb-4 text-center">
+        <div className="absolute bottom-3 left-0 right-0 text-center pointer-events-none">
           <a
             href="https://beian.miit.gov.cn/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[10px] text-gray-300 hover:text-gray-400 transition-colors"
+            className="text-[10px] text-gray-300 hover:text-gray-400 transition-colors pointer-events-auto"
           >
             沪ICP备2026028440号
           </a>
